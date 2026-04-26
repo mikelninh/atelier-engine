@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import designLibrary from "@/lib/designLibrary.json";
+import themedLibrary from "@/lib/themedLibrary.json";
 
 // Adapter: library entries (basePrice, slug) → the design shape the studio
 // uses (price, orders, commissionRate). Templates are starting points, so
@@ -371,6 +372,55 @@ function ProductCard({ design, active, onSelect }) {
   );
 }
 
+function ThemedDrops({ selectedDesign, onSelect }) {
+  return (
+    <div className="space-y-5">
+      {themedLibrary.collections.map((c) => (
+        <Card key={c.id} className="bg-white/50 p-4">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-[#786f64]">Themed drops</p>
+              <h2 className="text-2xl font-semibold">{c.name}</h2>
+              <p className="mt-1 text-sm text-[#786f64]">{c.subtitle}</p>
+            </div>
+            <span className="rounded-full bg-[#eadfd2] px-3 py-1 text-xs font-medium tracking-wide">{c.items.length} designs</span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+            {c.items.map((t) => {
+              const active = selectedDesign.slug === t.slug || selectedDesign.name === t.name;
+              return (
+                <button
+                  key={t.slug}
+                  onClick={() => onSelect(templateToDesign({ ...t, creator: "Atelier × " + (c.id === "pocket-creatures" ? "Pocket Creatures" : "Themed") }))}
+                  className={`flex flex-col overflow-hidden rounded-2xl border bg-white text-left transition hover:shadow-md ${active ? "border-[#191714] ring-2 ring-[#191714]/10" : "border-black/5"}`}
+                >
+                  <div className="relative aspect-square overflow-hidden bg-[#efe7d6]">
+                    <Image
+                      src={t.image}
+                      alt={t.name}
+                      width={320}
+                      height={320}
+                      sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 18vw"
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                    <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-[#191714]">{t.badge}</span>
+                  </div>
+                  <div className="flex flex-1 flex-col gap-0.5 p-3">
+                    <p className="text-sm font-semibold leading-tight">{t.name}</p>
+                    <p className="text-[11px] italic text-[#9b8066]">inspired by {t.inspiredBy}</p>
+                    <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#786f64]">{t.modelName} · €{t.basePrice}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 function TemplateGallery({ selectedDesign, onSelect }) {
   return (
     <Card className="bg-white/50 p-4">
@@ -488,6 +538,7 @@ export default function App() {
         </main>
         <div className="mt-5"><Marketplace selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
         <div className="mt-5"><TemplateGallery selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
+        <div className="mt-5"><ThemedDrops selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
         <div className="mt-5"><BusinessModel brandMode={brandMode} onSwitch={setBrandMode} /></div>
         <section className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
           {[
