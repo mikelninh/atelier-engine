@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import Image from "next/image";
 import designLibrary from "@/lib/designLibrary.json";
 
 // Adapter: library entries (basePrice, slug) → the design shape the studio
@@ -387,10 +388,18 @@ function TemplateGallery({ selectedDesign, onSelect }) {
             <button
               key={t.slug}
               onClick={() => onSelect(templateToDesign(t))}
-              className={`group flex flex-col overflow-hidden rounded-2xl border bg-white text-left transition hover:shadow-md ${active ? "border-[#191714] ring-2 ring-[#191714]/10" : "border-black/5"}`}
+              className={`flex flex-col overflow-hidden rounded-2xl border bg-white text-left transition hover:shadow-md ${active ? "border-[#191714] ring-2 ring-[#191714]/10" : "border-black/5"}`}
             >
               <div className="relative aspect-square overflow-hidden bg-[#efe7d6]">
-                <img src={t.image} alt={t.name} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+                <Image
+                  src={t.image}
+                  alt={t.name}
+                  width={320}
+                  height={320}
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 18vw"
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
                 <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-[#191714]">{t.badge}</span>
               </div>
               <div className="flex flex-1 flex-col gap-0.5 p-3">
