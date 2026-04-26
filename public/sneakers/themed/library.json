@@ -1,0 +1,258 @@
+{
+  "collections": [
+    {
+      "id": "mixed",
+      "name": "Top 10 Themed Drops",
+      "subtitle": "Cross-franchise inspirations · all generic, all original.",
+      "items": [
+        {
+          "slug": "galactic-knight",
+          "name": "Galactic Knight",
+          "inspiredBy": "space-opera trooper armour",
+          "modelName": "Aeris Flow",
+          "paletteName": "Moonstone",
+          "materialName": "Bio Leather",
+          "basePrice": 289,
+          "badge": "Themed Drop",
+          "tagline": "Plate armour, cream finish.",
+          "image": "/sneakers/themed/mixed/galactic-knight.png"
+        },
+        {
+          "slug": "stitched-hero",
+          "name": "Stitched Hero",
+          "inspiredBy": "comic-book superhero suits",
+          "modelName": "Court Heritage",
+          "paletteName": "Cobalt Trail",
+          "materialName": "Bio Leather",
+          "basePrice": 269,
+          "badge": "Themed Drop",
+          "tagline": "Crimson + navy. Web stitch.",
+          "image": "/sneakers/themed/mixed/stitched-hero.png"
+        },
+        {
+          "slug": "dragon-scale",
+          "name": "Dragon Scale",
+          "inspiredBy": "viking dragon-rider tales",
+          "modelName": "Trailforge X",
+          "paletteName": "Cobalt Trail",
+          "materialName": "Carbon Mesh",
+          "basePrice": 299,
+          "badge": "Themed Drop",
+          "tagline": "Iridescent. Bone-soled.",
+          "image": "/sneakers/themed/mixed/dragon-scale.png"
+        },
+        {
+          "slug": "theme-park-heritage",
+          "name": "Theme Park Heritage",
+          "inspiredBy": "vintage theme-park mascots",
+          "modelName": "Court Heritage",
+          "paletteName": "Moonstone",
+          "materialName": "Bio Leather",
+          "basePrice": 249,
+          "badge": "Themed Drop",
+          "tagline": "Cream + cherry. Round joy.",
+          "image": "/sneakers/themed/mixed/theme-park-heritage.png"
+        },
+        {
+          "slug": "sky-pirate",
+          "name": "Sky Pirate",
+          "inspiredBy": "swashbuckling sea-pirate epics",
+          "modelName": "Court Heritage",
+          "paletteName": "Sand Future",
+          "materialName": "Bio Leather",
+          "basePrice": 259,
+          "badge": "Themed Drop",
+          "tagline": "Brass eyelets. Rope laces.",
+          "image": "/sneakers/themed/mixed/sky-pirate.png"
+        },
+        {
+          "slug": "forest-spirit",
+          "name": "Forest Spirit",
+          "inspiredBy": "Studio Ghibli forests",
+          "modelName": "Aeris Flow",
+          "paletteName": "Forest Gum",
+          "materialName": "Cloud Suede",
+          "basePrice": 269,
+          "badge": "Themed Drop",
+          "tagline": "Moss. Earth. Quiet.",
+          "image": "/sneakers/themed/mixed/forest-spirit.png"
+        },
+        {
+          "slug": "bath-house-dream",
+          "name": "Bath House Dream",
+          "inspiredBy": "dreamlike Ghibli baths",
+          "modelName": "Future Slip",
+          "paletteName": "Sand Future",
+          "materialName": "Cloud Suede",
+          "basePrice": 279,
+          "badge": "Themed Drop",
+          "tagline": "Pink. Lilac. Steam.",
+          "image": "/sneakers/themed/mixed/bath-house-dream.png"
+        },
+        {
+          "slug": "demon-hunter",
+          "name": "Demon Hunter",
+          "inspiredBy": "demon-slaying anime",
+          "modelName": "Court Heritage",
+          "paletteName": "Forest Gum",
+          "materialName": "Bio Leather",
+          "basePrice": 269,
+          "badge": "Themed Drop",
+          "tagline": "Haori check. Blade silver.",
+          "image": "/sneakers/themed/mixed/demon-hunter.png"
+        },
+        {
+          "slug": "scroll-master",
+          "name": "Scroll Master",
+          "inspiredBy": "shinobi anime",
+          "modelName": "Trailforge X",
+          "paletteName": "Sand Future",
+          "materialName": "Carbon Mesh",
+          "basePrice": 279,
+          "badge": "Themed Drop",
+          "tagline": "Orange ember. Black scroll.",
+          "image": "/sneakers/themed/mixed/scroll-master.png"
+        },
+        {
+          "slug": "ancients-forge",
+          "name": "Forge of the Ancients",
+          "inspiredBy": "high-fantasy epics",
+          "modelName": "Aeris Flow",
+          "paletteName": "Sand Future",
+          "materialName": "Bio Leather",
+          "basePrice": 289,
+          "badge": "Themed Drop",
+          "tagline": "Bronze. Brass. Rune.",
+          "image": "/sneakers/themed/mixed/ancients-forge.png"
+        }
+      ]
+    },
+    {
+      "id": "pocket-creatures",
+      "name": "Pocket Creatures",
+      "subtitle": "10 sneakers inspired by classic creature-battle elemental types.",
+      "items": [
+        {
+          "slug": "electric-champ",
+          "name": "Electric Champion",
+          "inspiredBy": "electric-type creature",
+          "modelName": "Trailforge X",
+          "paletteName": "Cobalt Trail",
+          "materialName": "Carbon Mesh",
+          "basePrice": 269,
+          "badge": "Pocket Creature",
+          "tagline": "Lightning yellow.",
+          "image": "/sneakers/themed/pocket-creatures/electric-champ.png"
+        },
+        {
+          "slug": "charcoal-flame",
+          "name": "Charcoal Flame",
+          "inspiredBy": "fire-type creature",
+          "modelName": "Aeris Flow",
+          "paletteName": "Sand Future",
+          "materialName": "Bio Leather",
+          "basePrice": 279,
+          "badge": "Pocket Creature",
+          "tagline": "Ember orange. Cream wing.",
+          "image": "/sneakers/themed/pocket-creatures/charcoal-flame.png"
+        },
+        {
+          "slug": "tidal-crown",
+          "name": "Tidal Crown",
+          "inspiredBy": "water-type creature",
+          "modelName": "Future Slip",
+          "paletteName": "Cobalt Trail",
+          "materialName": "Cloud Suede",
+          "basePrice": 289,
+          "badge": "Pocket Creature",
+          "tagline": "Deep ocean. Pearl shell.",
+          "image": "/sneakers/themed/pocket-creatures/tidal-crown.png"
+        },
+        {
+          "slug": "verdant-bulb",
+          "name": "Verdant Bulb",
+          "inspiredBy": "grass-type creature",
+          "modelName": "Aeris Flow",
+          "paletteName": "Forest Gum",
+          "materialName": "Pearl Knit",
+          "basePrice": 259,
+          "badge": "Pocket Creature",
+          "tagline": "Forest. Bud pink.",
+          "image": "/sneakers/themed/pocket-creatures/verdant-bulb.png"
+        },
+        {
+          "slug": "psychic-spoon",
+          "name": "Psychic Spoon",
+          "inspiredBy": "psychic-type creature",
+          "modelName": "Court Heritage",
+          "paletteName": "Sand Future",
+          "materialName": "Bio Leather",
+          "basePrice": 259,
+          "badge": "Pocket Creature",
+          "tagline": "Lilac. Cream. Stillness.",
+          "image": "/sneakers/themed/pocket-creatures/psychic-spoon.png"
+        },
+        {
+          "slug": "stone-mountain",
+          "name": "Stone Mountain",
+          "inspiredBy": "rock-type creature",
+          "modelName": "Trailforge X",
+          "paletteName": "Sand Future",
+          "materialName": "Carbon Mesh",
+          "basePrice": 279,
+          "badge": "Pocket Creature",
+          "tagline": "Granite. Earth. Weight.",
+          "image": "/sneakers/themed/pocket-creatures/stone-mountain.png"
+        },
+        {
+          "slug": "ghost-veil",
+          "name": "Ghost Veil",
+          "inspiredBy": "ghost-type creature",
+          "modelName": "Future Slip",
+          "paletteName": "Cobalt Trail",
+          "materialName": "Cloud Suede",
+          "basePrice": 289,
+          "badge": "Pocket Creature",
+          "tagline": "Translucent purple.",
+          "image": "/sneakers/themed/pocket-creatures/ghost-veil.png"
+        },
+        {
+          "slug": "iron-wing",
+          "name": "Iron Wing",
+          "inspiredBy": "steel-type creature",
+          "modelName": "Trailforge X",
+          "paletteName": "Moonstone",
+          "materialName": "Carbon Mesh",
+          "basePrice": 289,
+          "badge": "Pocket Creature",
+          "tagline": "Brushed steel. Sky.",
+          "image": "/sneakers/themed/pocket-creatures/iron-wing.png"
+        },
+        {
+          "slug": "frost-crystal",
+          "name": "Frost Crystal",
+          "inspiredBy": "ice-type creature",
+          "modelName": "Aeris Flow",
+          "paletteName": "Moonstone",
+          "materialName": "Pearl Knit",
+          "basePrice": 269,
+          "badge": "Pocket Creature",
+          "tagline": "Glacier blue. Snow.",
+          "image": "/sneakers/themed/pocket-creatures/frost-crystal.png"
+        },
+        {
+          "slug": "solar-wing",
+          "name": "Solar Wing",
+          "inspiredBy": "light-type creature",
+          "modelName": "Court Heritage",
+          "paletteName": "Sand Future",
+          "materialName": "Bio Leather",
+          "basePrice": 289,
+          "badge": "Pocket Creature",
+          "tagline": "Gold. Cream. Ember.",
+          "image": "/sneakers/themed/pocket-creatures/solar-wing.png"
+        }
+      ]
+    }
+  ]
+}
