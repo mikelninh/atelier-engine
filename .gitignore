@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# build output
+dist
+dist-ssr
+.next
+out
+
+# env
+.env
+.env.local
+.env.*.local
+
+# vercel
+.vercel
+
+# editor / OS
+.DS_Store
+.idea
+.vscode
+*.suo
+*.swp
+*.log
+
+# testing
+coverage
