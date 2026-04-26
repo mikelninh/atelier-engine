@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import designLibrary from "@/lib/designLibrary.json";
 import themedLibrary from "@/lib/themedLibrary.json";
+import { THEMES, findTheme } from "@/lib/sneakerPrompt";
 
 // Adapter: library entries (basePrice, slug) → the design shape the studio
 // uses (price, orders, commissionRate). Templates are starting points, so
@@ -215,11 +216,20 @@ function Donut({ value, suffix = "%" }) {
   );
 }
 
-function ProductImage({ design, className = "" }) {
+function ProductImage({ design, liveImage, loading, className = "" }) {
+  const src = liveImage || design.image;
   return (
     <div className={`relative overflow-hidden rounded-[1.5rem] bg-[#f6f1ea] ${className}`}>
-      <img src={design.image} alt={`${design.name} sneaker design`} className="h-full w-full object-cover" />
+      <img src={src} alt={`${design.name} sneaker design`} className={`h-full w-full object-cover transition-opacity duration-300 ${loading ? "opacity-50" : "opacity-100"}`} />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/[0.03]" />
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="rounded-full border border-black/5 bg-white/85 px-4 py-2 text-sm font-medium tracking-wide text-[#191714] shadow-lg backdrop-blur">
+            <span className="mr-2 inline-block h-2 w-2 animate-pulse rounded-full bg-[#191714]" />
+            Drafting your sneaker…
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -279,22 +289,18 @@ function ToolRail() {
   );
 }
 
-function LiveDesignPreview({ selectedDesign, price, styleMatch, demandScore, commission, published }) {
+function LiveDesignPreview({ selectedDesign, price, styleMatch, demandScore, commission, published, liveImage, generating, isCustom }) {
   return (
     <Card className="relative overflow-hidden bg-white/65">
       <div className="flex items-center justify-between border-b border-black/5 px-5 py-4">
-        <div><p className="text-xs uppercase tracking-[0.22em] text-[#786f64]">Live Design Preview</p><h2 className="text-xl font-semibold">{selectedDesign.name}</h2></div>
+        <div><p className="text-xs uppercase tracking-[0.22em] text-[#786f64]">Live Design Preview</p><h2 className="text-xl font-semibold">{selectedDesign.name}{isCustom && <span className="ml-2 text-sm font-normal text-[#9b8066]">· custom</span>}</h2></div>
         <div className="flex items-center gap-2 text-sm text-green-700"><span className="h-2 w-2 rounded-full bg-green-600" />{published ? "Marketplace Live" : "Live"}</div>
       </div>
       <div className="relative min-h-[420px] bg-gradient-to-br from-[#f4ece3] via-[#f8f4ee] to-[#e8ded2] p-5 md:min-h-[520px]">
-        <ToolRail />
-        <ProductImage design={selectedDesign} className="mx-auto h-[330px] max-w-[760px] md:h-[430px]" />
+        <ProductImage design={selectedDesign} liveImage={liveImage} loading={generating} className="mx-auto h-[330px] max-w-[760px] md:h-[430px]" />
         <div className="absolute bottom-5 right-5 rounded-3xl border border-black/5 bg-white/85 p-5 shadow-xl backdrop-blur">
           <p className="text-xs text-[#786f64]">Estimated made-to-order price</p>
           <div className="mt-1 flex items-end gap-4"><p className="text-4xl font-semibold">€{price}</p><span className="mb-1 rounded-full bg-[#f4ece3] px-3 py-1 text-xs">EUR ⌄</span></div>
-        </div>
-        <div className="absolute bottom-5 left-5 flex gap-2">
-          {["↶", "↻", "↗"].map((item) => <button key={item} className="grid h-11 w-11 place-items-center rounded-full bg-white/80 shadow-md backdrop-blur">{item}</button>)}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-3 p-4">
@@ -302,6 +308,99 @@ function LiveDesignPreview({ selectedDesign, price, styleMatch, demandScore, com
         <div className="rounded-2xl bg-[#f7f2e8] p-3"><p className="text-xs text-[#786f64]">Demand</p><p className="text-xl font-semibold">{demandScore}/100</p></div>
         <div className="rounded-2xl bg-[#f7f2e8] p-3"><p className="text-xs text-[#786f64]">Creator earns</p><p className="text-xl font-semibold">{formatCurrency(commission)}</p></div>
       </div>
+    </Card>
+  );
+}
+
+function ChipRow({ label, options, value, onChange, renderChip }) {
+  return (
+    <div>
+      <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[#786f64]">{label}</p>
+      <div className="-mx-1 flex flex-wrap gap-1.5 px-1">
+        {options.map((opt) => {
+          const active = (typeof opt === "string" ? opt : opt.id || opt.name) === value;
+          return (
+            <button
+              key={typeof opt === "string" ? opt : opt.id || opt.name}
+              onClick={() => onChange(typeof opt === "string" ? opt : opt.id || opt.name)}
+              className={`rounded-full border px-3 py-1.5 text-xs transition ${active ? "border-[#191714] bg-[#191714] text-white" : "border-black/10 bg-white/70 text-[#191714] hover:bg-white"}`}
+            >
+              {renderChip ? renderChip(opt, active) : (typeof opt === "string" ? opt : opt.name || opt.label)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GenerateStudio({
+  effectiveModelName, effectivePaletteName, effectiveMaterialName, aiMode, themeId, refineNote,
+  onChangeModel, onChangePalette, onChangeMaterial, onChangeAiMode, onChangeTheme, onChangeRefine,
+  generating, sketches, onGenerate, onUseSketch, onResetOverrides, isCustom,
+  themes, generationCost,
+}) {
+  return (
+    <Card className="bg-white/70 p-5">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <p className="text-xs uppercase tracking-[0.22em] text-[#786f64]">AI Sneaker Studio</p>
+          <h3 className="text-lg font-semibold">Generate your design</h3>
+          <p className="mt-1 text-xs text-[#786f64]">Mix any silhouette, palette, material, mood, and theme. AI renders a real photo of your sneaker in seconds.</p>
+        </div>
+        {isCustom && <button onClick={onResetOverrides} className="text-xs text-[#9b8066] underline-offset-2 hover:underline">reset to template</button>}
+      </div>
+
+      <div className="space-y-3">
+        <ChipRow label="Silhouette" options={models} value={effectiveModelName} onChange={onChangeModel} />
+        <ChipRow label="Palette" options={palettes} value={effectivePaletteName} onChange={onChangePalette} renderChip={(p, active) => (
+          <span className="flex items-center gap-2">
+            <span className="flex">
+              <span className="h-3 w-3 rounded-l-full" style={{ background: p.primary }} />
+              <span className="h-3 w-3" style={{ background: p.secondary }} />
+              <span className="h-3 w-3 rounded-r-full" style={{ background: p.accent }} />
+            </span>
+            <span>{p.name}</span>
+          </span>
+        )} />
+        <ChipRow label="Material" options={materials} value={effectiveMaterialName} onChange={onChangeMaterial} />
+        <ChipRow label="Mood" options={aiModes} value={aiMode} onChange={onChangeAiMode} />
+        <ChipRow label="Theme" options={themes} value={themeId} onChange={onChangeTheme} renderChip={(t, active) => t.label} />
+      </div>
+
+      <div className="mt-5 flex items-center gap-2">
+        <input
+          type="text"
+          value={refineNote}
+          onChange={(e) => onChangeRefine(e.target.value)}
+          placeholder="Refine: e.g. chunkier sole, neon laces, distressed finish…"
+          className="flex-1 rounded-2xl border border-black/10 bg-white/80 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#191714]/20"
+          disabled={generating}
+        />
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <Button onClick={() => onGenerate({ count: 1 })} disabled={generating} className="px-5 py-3">
+          {generating ? "Generating…" : <>Generate <Icon name="sparkles" /></>}
+        </Button>
+        <Button onClick={() => onGenerate({ count: 4 })} disabled={generating} variant="outline" className="px-5 py-3">
+          ×4 Variations <Icon name="cube" />
+        </Button>
+        <p className="ml-auto text-[11px] text-[#9b8066]">~7s · €{generationCost.toFixed(3)} per render</p>
+      </div>
+
+      {sketches.length > 0 && (
+        <div className="mt-5 border-t border-black/5 pt-4">
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-[#786f64]">Sketches this session · {sketches.length}</p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {sketches.map((s) => (
+              <button key={s.id} onClick={() => onUseSketch(s)} className="group relative shrink-0 overflow-hidden rounded-xl border border-black/5 transition hover:border-[#191714]" title={`${s.modelName} · ${s.paletteName} · ${s.materialName}${s.themeLabel ? " · " + s.themeLabel : ""}`}>
+                <img src={s.image} alt="sketch" width="72" height="72" className="h-[72px] w-[72px] object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }
@@ -508,9 +607,22 @@ export default function App() {
   const [brandMode, setBrandMode] = useState(brandModes[1]);
   const [published, setPublished] = useState(false);
 
-  const selectedModel = getEntityByName(models, selectedDesign.modelName);
-  const selectedPalette = getEntityByName(palettes, selectedDesign.paletteName);
-  const selectedMaterial = getEntityByName(materials, selectedDesign.materialName);
+  // AI Studio state
+  const [overrides, setOverrides] = useState({});           // { modelName?, paletteName?, materialName? }
+  const [themeId, setThemeId] = useState("none");
+  const [refineNote, setRefineNote] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [liveImage, setLiveImage] = useState(null);         // most recent generated data URL
+  const [sketches, setSketches] = useState([]);             // [{id, image, modelName, paletteName, materialName, themeId, themeLabel}]
+
+  const effectiveModelName = overrides.modelName || selectedDesign.modelName;
+  const effectivePaletteName = overrides.paletteName || selectedDesign.paletteName;
+  const effectiveMaterialName = overrides.materialName || selectedDesign.materialName;
+  const isCustom = Boolean(overrides.modelName || overrides.paletteName || overrides.materialName || themeId !== "none" || refineNote);
+
+  const selectedModel = getEntityByName(models, effectiveModelName);
+  const selectedPalette = getEntityByName(palettes, effectivePaletteName);
+  const selectedMaterial = getEntityByName(materials, effectiveMaterialName);
   const archetype = getBestMarketArchetype(selectedModel.name);
   const effectiveCommissionRate = selectedDesign.commissionRate + (brandMode.id === "creator-platform" ? 0 : archetype.commissionBoost);
 
@@ -525,6 +637,76 @@ export default function App() {
     setSelectedDesign(design);
     setAiMode(design.name === "Trailforge X" ? "Performance Beast" : "Collector Grail");
     setPublished(false);
+    setOverrides({});
+    setThemeId("none");
+    setRefineNote("");
+    setLiveImage(null);
+  }
+
+  function resetOverrides() {
+    setOverrides({});
+    setThemeId("none");
+    setRefineNote("");
+    setLiveImage(null);
+  }
+
+  async function generateOnce() {
+    const res = await fetch("/api/generate-sneaker", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        modelName: effectiveModelName,
+        paletteName: effectivePaletteName,
+        materialName: effectiveMaterialName,
+        aiMode,
+        themeId,
+        refineNote,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || err.error || `HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    return json.image;
+  }
+
+  async function handleGenerate({ count = 1 } = {}) {
+    if (generating) return;
+    setGenerating(true);
+    try {
+      const themeLabel = findTheme(themeId)?.label || "";
+      const tasks = Array.from({ length: count }, () => generateOnce());
+      const results = await Promise.allSettled(tasks);
+      const newSketches = results
+        .filter((r) => r.status === "fulfilled")
+        .map((r) => ({
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          image: r.value,
+          modelName: effectiveModelName,
+          paletteName: effectivePaletteName,
+          materialName: effectiveMaterialName,
+          themeId,
+          themeLabel,
+          refineNote,
+        }));
+      if (newSketches.length === 0) {
+        const firstErr = results.find((r) => r.status === "rejected");
+        alert("Generation failed: " + (firstErr?.reason?.message || "unknown error"));
+      } else {
+        setLiveImage(newSketches[0].image);
+        setSketches((s) => [...newSketches, ...s].slice(0, 12));
+      }
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  function useSketch(s) {
+    setLiveImage(s.image);
+    setOverrides({ modelName: s.modelName, paletteName: s.paletteName, materialName: s.materialName });
+    setThemeId(s.themeId || "none");
+    setRefineNote(s.refineNote || "");
   }
 
   return (
@@ -533,7 +715,41 @@ export default function App() {
         <Header />
         <main className="grid gap-5 xl:grid-cols-[0.95fr_1.55fr_0.85fr]">
           <Hero onStart={() => setPublished(true)} />
-          <LiveDesignPreview selectedDesign={selectedDesign} price={selectedDesign.price} styleMatch={styleMatch} demandScore={demandScore} commission={commission} published={published} />
+          <div className="space-y-5">
+            <LiveDesignPreview
+              selectedDesign={selectedDesign}
+              price={selectedDesign.price}
+              styleMatch={styleMatch}
+              demandScore={demandScore}
+              commission={commission}
+              published={published}
+              liveImage={liveImage}
+              generating={generating}
+              isCustom={isCustom}
+            />
+            <GenerateStudio
+              effectiveModelName={effectiveModelName}
+              effectivePaletteName={effectivePaletteName}
+              effectiveMaterialName={effectiveMaterialName}
+              aiMode={aiMode}
+              themeId={themeId}
+              refineNote={refineNote}
+              onChangeModel={(v) => setOverrides((o) => ({ ...o, modelName: v }))}
+              onChangePalette={(v) => setOverrides((o) => ({ ...o, paletteName: v }))}
+              onChangeMaterial={(v) => setOverrides((o) => ({ ...o, materialName: v }))}
+              onChangeAiMode={setAiMode}
+              onChangeTheme={setThemeId}
+              onChangeRefine={setRefineNote}
+              onResetOverrides={resetOverrides}
+              isCustom={isCustom}
+              generating={generating}
+              sketches={sketches}
+              onGenerate={handleGenerate}
+              onUseSketch={useSketch}
+              themes={THEMES}
+              generationCost={0.005}
+            />
+          </div>
           <MetricPanel styleMatch={styleMatch} demandScore={demandScore} commission={commission} monthlyOrders={monthlyOrders} monthlyUpside={monthlyUpside} commissionRate={effectiveCommissionRate} onPublish={() => setPublished(true)} />
         </main>
         <div className="mt-5"><Marketplace selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
