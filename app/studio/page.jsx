@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useMemo, useState } from "react";
 
 // Placeholder sneaker imagery — swap for real photography in /public/sneakers/
