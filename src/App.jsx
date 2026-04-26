@@ -4,10 +4,10 @@ import React, { useMemo, useState } from "react";
 // once available. The placehold.co URLs use Atelier Engine palette tokens so
 // the dashboard ships visually intact out of the box.
 const sneakerImages = {
-  minimalRunner: "https://placehold.co/640x440/e9e4d8/282521?text=Aeris+Flow",
-  retroCourt:    "https://placehold.co/640x440/f4efe4/173f32?text=Court+Heritage",
-  futureMule:    "https://placehold.co/640x440/d8bfa0/171615?text=Future+Slip",
-  trailBeast:    "https://placehold.co/640x440/0c0d10/2f5ea8?text=Trailforge+X",
+  minimalRunner: "/sneakers/aeris-flow.png",
+  retroCourt: "/sneakers/court-heritage.png",
+  futureMule: "/sneakers/future-slip.png",
+  trailBeast: "/sneakers/trailforge-x.png",
 };
 
 const materials = [
