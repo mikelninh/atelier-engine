@@ -1,10 +1,28 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import designLibrary from "@/lib/designLibrary.json";
 
-// Placeholder sneaker imagery — swap for real photography in /public/sneakers/
-// once available. The placehold.co URLs use Atelier Engine palette tokens so
-// the dashboard ships visually intact out of the box.
+// Adapter: library entries (basePrice, slug) → the design shape the studio
+// uses (price, orders, commissionRate). Templates are starting points, so
+// orders/commission default to neutral values until the creator publishes.
+function templateToDesign(t) {
+  return {
+    name: t.name,
+    creator: t.creator,
+    image: t.image,
+    modelName: t.modelName,
+    paletteName: t.paletteName,
+    materialName: t.materialName,
+    price: t.basePrice,
+    orders: 0,
+    commissionRate: 25,
+    tagline: t.tagline,
+    badge: t.badge,
+    slug: t.slug,
+  };
+}
+
 const sneakerImages = {
   minimalRunner: "/sneakers/aeris-flow.png",
   retroCourt: "/sneakers/court-heritage.png",
@@ -352,6 +370,42 @@ function ProductCard({ design, active, onSelect }) {
   );
 }
 
+function TemplateGallery({ selectedDesign, onSelect }) {
+  return (
+    <Card className="bg-white/50 p-4">
+      <div className="mb-4 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.18em] text-[#786f64]">Start from a template</p>
+          <h2 className="text-2xl font-semibold">{designLibrary.length} starter designs · fork &amp; remix</h2>
+          <p className="mt-1 text-sm text-[#786f64]">Pick any silhouette to load into the studio. Adjust palette, material, and price — then publish your own drop.</p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+        {designLibrary.map((t) => {
+          const active = selectedDesign.slug === t.slug || selectedDesign.name === t.name;
+          return (
+            <button
+              key={t.slug}
+              onClick={() => onSelect(templateToDesign(t))}
+              className={`group flex flex-col overflow-hidden rounded-2xl border bg-white text-left transition hover:shadow-md ${active ? "border-[#191714] ring-2 ring-[#191714]/10" : "border-black/5"}`}
+            >
+              <div className="relative aspect-square overflow-hidden bg-[#efe7d6]">
+                <img src={t.image} alt={t.name} className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+                <span className="absolute left-2 top-2 rounded-full bg-white/85 px-2 py-0.5 text-[10px] uppercase tracking-[0.14em] text-[#191714]">{t.badge}</span>
+              </div>
+              <div className="flex flex-1 flex-col gap-0.5 p-3">
+                <p className="text-sm font-semibold leading-tight">{t.name}</p>
+                <p className="text-[11px] text-[#786f64]">by {t.creator}</p>
+                <p className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#786f64]">{t.modelName} · €{t.basePrice}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
 function Marketplace({ selectedDesign, onSelect }) {
   return (
     <Card className="bg-white/50 p-4">
@@ -424,6 +478,7 @@ export default function App() {
           <MetricPanel styleMatch={styleMatch} demandScore={demandScore} commission={commission} monthlyOrders={monthlyOrders} monthlyUpside={monthlyUpside} commissionRate={effectiveCommissionRate} onPublish={() => setPublished(true)} />
         </main>
         <div className="mt-5"><Marketplace selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
+        <div className="mt-5"><TemplateGallery selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
         <div className="mt-5"><BusinessModel brandMode={brandMode} onSwitch={setBrandMode} /></div>
         <section className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
           {[
