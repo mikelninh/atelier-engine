@@ -15,12 +15,12 @@ export async function POST(req) {
   try { body = await req.json(); }
   catch { return Response.json({ error: "Invalid JSON body" }, { status: 400 }); }
 
-  const { modelName, paletteName, materialName, aiMode, refineNote } = body || {};
+  const { modelName, paletteName, materialName, aiMode, themeId, refineNote, signatureFeature, colorway, construction, render } = body || {};
   if (!modelName || !paletteName || !materialName) {
     return Response.json({ error: "modelName, paletteName, materialName are required" }, { status: 400 });
   }
 
-  const userPrompt = buildUserPrompt({ modelName, paletteName, materialName, aiMode, refineNote });
+  const userPrompt = buildUserPrompt({ modelName, paletteName, materialName, aiMode, themeId, refineNote, signatureFeature, colorway, construction, render });
   const t0 = Date.now();
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -55,6 +55,7 @@ export async function POST(req) {
   return Response.json({
     image: imageUrl,
     elapsedMs: Date.now() - t0,
-    inputs: { modelName, paletteName, materialName, aiMode, refineNote: refineNote || null },
+    prompt: userPrompt,
+    inputs: { modelName, paletteName, materialName, aiMode, themeId: themeId || null, refineNote: refineNote || null, signatureFeature: signatureFeature || null },
   });
 }

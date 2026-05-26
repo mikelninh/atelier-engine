@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import designLibrary from "@/lib/designLibrary.json";
 import themedLibrary from "@/lib/themedLibrary.json";
 import { THEMES, findTheme } from "@/lib/sneakerPrompt";
@@ -240,8 +241,12 @@ function Header() {
       <div className="flex items-center gap-8">
         <div className="font-serif text-2xl tracking-[0.18em]">ATELIER ENGINE</div>
         <nav className="hidden items-center gap-2 text-sm lg:flex">
-          {["Dashboard", "Design Studio", "Marketplace", "Orders", "Analytics", "Resources"].map((item, index) => (
-            <button key={item} className={`rounded-2xl px-4 py-2 transition ${index === 0 ? "bg-[#eadfd2]" : "hover:bg-[#f4ece3]"}`}>{item}</button>
+          {[
+            { label: "Dashboard", href: "/studio", active: true },
+            { label: "Design Studio", href: "/zone-studio" },
+            { label: "3D Configurator", href: "/configurator" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className={`rounded-2xl px-4 py-2 transition ${item.active ? "bg-[#eadfd2]" : "hover:bg-[#f4ece3]"}`}>{item.label}</Link>
           ))}
         </nav>
       </div>
