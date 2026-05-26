@@ -3,29 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { buildUserPrompt, getSilhouette, ZONE_LABELS } from "@/lib/sneakerPrompt";
 import Nav from "../Nav";
-
-// Named footwear colours: label feeds the prompt (a designer's colourway names
-// colours, not hex), hex paints the instant SVG preview.
-const NAMED_COLORS = [
-  { label: "soft off-white pearl", hex: "#E9E4D8" },
-  { label: "off-white waxed", hex: "#EDE7DA" },
-  { label: "cream foam", hex: "#F2EADB" },
-  { label: "ivory", hex: "#F4EFE4" },
-  { label: "warm sand-beige", hex: "#D8BFA0" },
-  { label: "tan suede", hex: "#B67633" },
-  { label: "soft cocoa brown", hex: "#6E5742" },
-  { label: "gum amber rubber", hex: "#C8924A" },
-  { label: "deep forest green", hex: "#173F32" },
-  { label: "olive drab", hex: "#5A5A33" },
-  { label: "cobalt blue", hex: "#2F5EA8" },
-  { label: "midnight navy", hex: "#1E2A44" },
-  { label: "crimson red", hex: "#9E2B25" },
-  { label: "pastel pink", hex: "#E9C6CF" },
-  { label: "dark slate grey", hex: "#2A3340" },
-  { label: "deep charcoal", hex: "#282521" },
-  { label: "matte obsidian black", hex: "#14151A" },
-];
-const HEX = Object.fromEntries(NAMED_COLORS.map((c) => [c.label, c.hex]));
+import { NAMED_COLORS, HEX, SneakerSVG, MATERIALS, MATERIAL_BY_NAME } from "../sneakerArt";
 
 // Per-zone starting colourway (in label form). Silhouette decides which zones
 // actually show; the rest are ignored.
@@ -44,64 +22,7 @@ const START = {
 };
 
 const SILHOUETTE_NAMES = ["Court Heritage", "Aeris Flow", "Future Slip", "Trailforge X"];
-// Real material library with spec-backed attributes — designers asked for
-// honest, sourceable materials, not invented ones. (Eco notes are ranges, not
-// hero claims.)
-const MATERIALS = [
-  { name: "Cloud Suede", finish: "matte nap", composition: "premium bovine suede", eco: "durable, repairable" },
-  { name: "Pearl Knit", finish: "matte weave", composition: "recycled poly engineered knit", eco: "~60% recycled content" },
-  { name: "Bio Leather", finish: "satin grain", composition: "plant-based (cactus/grape) leather alt", eco: "bio-based, lower-impact" },
-  { name: "Carbon Mesh", finish: "low-sheen", composition: "engineered mesh + TPU overlays", eco: "performance, mono-material upper" },
-];
-const MATERIAL_BY_NAME = Object.fromEntries(MATERIALS.map((m) => [m.name, m]));
 const MOODS = ["Luxury Minimalist", "Street Ritual", "Performance Beast", "Collector Grail"];
-
-// Stylised low-top profile (toe at left). Each zone is a path keyed by zone id
-// so a tap selects it and the fill updates live. Drawn order = paint order.
-function SneakerSVG({ colors, selected, onSelect }) {
-  const fill = (z) => HEX[colors[z]] || "#ddd";
-  const zoneProps = (z) => ({
-    fill: fill(z),
-    onClick: () => onSelect(z),
-    className: "cursor-pointer transition-[stroke] duration-150",
-    stroke: selected === z ? "#191714" : "rgba(0,0,0,0.12)",
-    strokeWidth: selected === z ? 2.4 : 0.8,
-  });
-  return (
-    <svg viewBox="0 0 440 230" className="w-full" role="img" aria-label="Editable sneaker zones">
-      {/* ground shadow */}
-      <ellipse cx="225" cy="214" rx="200" ry="9" fill="rgba(0,0,0,0.06)" />
-      {/* outsole */}
-      <path {...zoneProps("outsole")} d="M28,188 C16,190 16,204 32,206 L404,206 C418,206 420,190 408,187 C300,180 120,180 28,188 Z" />
-      {/* midsole */}
-      <path {...zoneProps("midsole")} d="M32,187 C120,180 300,180 408,187 L404,166 C300,159 120,159 34,166 Z" />
-      {/* base upper */}
-      <path {...zoneProps("base")} d="M34,166 C36,150 40,118 78,104 C120,90 168,86 222,88 L312,92 C356,98 388,124 400,160 L408,166 C300,159 120,159 34,166 Z" />
-      {/* toe cap (left front) */}
-      <path {...zoneProps("toe")} d="M34,166 C36,142 44,118 76,106 C92,120 100,144 102,166 Z" />
-      {/* side overlay */}
-      <path {...zoneProps("overlay")} d="M126,164 C126,132 148,112 186,110 C214,108 230,122 230,164 Z" />
-      {/* eyestay / lace panel */}
-      <path {...zoneProps("eyestay")} d="M236,112 L318,94 C342,108 346,132 340,162 L262,162 C246,150 240,130 236,112 Z" />
-      {/* tongue */}
-      <path {...zoneProps("tongue")} d="M214,108 L246,102 L252,80 L222,80 Z" />
-      {/* collar */}
-      <path {...zoneProps("collar")} d="M312,94 C346,84 380,94 394,120 C380,116 358,112 338,118 C326,104 318,98 312,94 Z" />
-      {/* heel tab */}
-      <path {...zoneProps("heelTab")} d="M394,120 C410,128 416,146 412,164 L388,164 C386,144 388,132 394,120 Z" />
-      {/* laces */}
-      <g onClick={() => onSelect("laces")} className="cursor-pointer">
-        {[0, 1, 2].map((i) => (
-          <line key={i}
-            x1={252 + i * 26} y1={150 - i * 12} x2={300 + i * 18} y2={118 - i * 8}
-            stroke={HEX[colors.laces] || "#fff"}
-            strokeWidth={selected === "laces" ? 7 : 5} strokeLinecap="round"
-          />
-        ))}
-      </g>
-    </svg>
-  );
-}
 
 function Card({ children, className = "" }) {
   return <div className={`rounded-[1.6rem] border border-black/5 bg-white/70 shadow-xl shadow-black/[0.04] ${className}`}>{children}</div>;
@@ -175,6 +96,16 @@ export default function ZoneStudio() {
     a.download = `${modelName.replace(/\s+/g, "-").toLowerCase()}-techpack.json`;
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  // Publish as a shareable, numbered drop page (design encoded in the URL —
+  // self-contained, no storage). Copies the link and opens the drop.
+  function publishDrop() {
+    const design = { m: modelName, mat: materialName, mood: aiMode, sig: signatureFeature, story, c: colors };
+    const d = btoa(encodeURIComponent(JSON.stringify(design)));
+    const url = `/drop?d=${d}`;
+    try { navigator.clipboard?.writeText(window.location.origin + url); } catch {}
+    window.open(url, "_blank");
   }
 
   async function runDesignerReview() {
@@ -329,9 +260,12 @@ export default function ZoneStudio() {
                   className="mt-1 w-full rounded-xl border border-black/10 bg-white/80 px-3 py-2 text-sm text-[#191714]" />
               </label>
             </div>
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#786f64]">Tech-pack spec</p>
-              <button onClick={exportTechPack} className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] hover:bg-white">Export JSON ↓</button>
+              <div className="flex items-center gap-2">
+                <button onClick={exportTechPack} className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] hover:bg-white">Export JSON ↓</button>
+                <button onClick={publishDrop} className="rounded-full bg-[#191714] px-3 py-1 text-[11px] font-medium text-white hover:bg-[#302d28]">Publish drop ↗</button>
+              </div>
             </div>
             <pre className="flex-1 overflow-auto whitespace-pre-wrap rounded-2xl bg-[#191714] p-4 text-[11px] leading-relaxed text-[#e9e4d8]">{prompt}</pre>
           </Card>
