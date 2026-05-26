@@ -53,7 +53,7 @@ function Card({ children, className = "" }) {
 const VARIANT_LABELS = { midnight: "Midnight", beach: "Beach", street: "Street" };
 
 export default function Configurator() {
-  const [modelKey, setModelKey] = useState("atelierRunner");
+  const [modelKey, setModelKey] = useState("studioRunner");
   const model = MODELS[modelKey];
   const isZone = model.type === "zone";
 
