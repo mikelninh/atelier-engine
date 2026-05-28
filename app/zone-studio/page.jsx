@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { buildUserPrompt, getSilhouette, ZONE_LABELS } from "@/lib/sneakerPrompt";
+import { buildUserPrompt, getSilhouette, getZoneLabels } from "@/lib/productSpec";
+
+const ZONE_LABELS = getZoneLabels("sneaker");
 import Nav from "../Nav";
 import { NAMED_COLORS, HEX, SneakerSVG, MATERIALS, MATERIAL_BY_NAME } from "../sneakerArt";
 

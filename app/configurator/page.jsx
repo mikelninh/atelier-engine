@@ -3,7 +3,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Nav from "../Nav";
-import { ZONE_LABELS } from "@/lib/sneakerPrompt";
+import { getZoneLabels } from "@/lib/productSpec";
+
+const ZONE_LABELS = getZoneLabels("sneaker");
 
 const Scene = dynamic(() => import("./Scene"), {
   ssr: false,

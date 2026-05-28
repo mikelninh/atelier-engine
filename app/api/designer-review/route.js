@@ -1,4 +1,4 @@
-import { buildUserPrompt } from "@/lib/sneakerPrompt";
+import { buildUserPrompt } from "@/lib/productSpec";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

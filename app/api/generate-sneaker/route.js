@@ -1,26 +1,54 @@
-import { SYSTEM_PROMPT, buildUserPrompt } from "@/lib/sneakerPrompt";
+import { buildUserPrompt, buildMatchingSetPrompt, getSystemPrompt, MATCHING_SYSTEM_PROMPT } from "@/lib/productSpec";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MODEL = process.env.OPENROUTER_IMAGE_MODEL || "google/gemini-2.5-flash-image";
 
+// Generates one editorial product image. Three shapes:
+//  - single product:  { productType?, modelName, paletteName, materialName, ... }
+//  - matching set:     { productType: "set", items: [...], sharedPalette?, ... }
+// productType defaults to "sneaker" so existing callers are unchanged.
 export async function POST(req) {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    return Response.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
-  }
-
   let body;
   try { body = await req.json(); }
   catch { return Response.json({ error: "Invalid JSON body" }, { status: 400 }); }
 
-  const { modelName, paletteName, materialName, aiMode, themeId, refineNote, signatureFeature, colorway, construction, render } = body || {};
-  if (!modelName || !paletteName || !materialName) {
-    return Response.json({ error: "modelName, paletteName, materialName are required" }, { status: 400 });
+  const isSet = body?.productType === "set" || Array.isArray(body?.items);
+  const isRaw = typeof body?.rawPrompt === "string" && body.rawPrompt.trim();
+
+  let systemPrompt;
+  let userPrompt;
+  if (isRaw) {
+    // A pre-built prompt (e.g. from the Watch Designer Agent) — render verbatim.
+    systemPrompt = body.systemPrompt || getSystemPrompt(body.productType || "watch");
+    userPrompt = body.rawPrompt;
+  } else if (isSet) {
+    if (!Array.isArray(body.items) || body.items.length === 0) {
+      return Response.json({ error: "items array is required for a matching set" }, { status: 400 });
+    }
+    systemPrompt = MATCHING_SYSTEM_PROMPT;
+    userPrompt = buildMatchingSetPrompt(body);
+  } else {
+    const { modelName, paletteName, materialName } = body || {};
+    if (!modelName || !paletteName || !materialName) {
+      return Response.json({ error: "modelName, paletteName, materialName are required" }, { status: 400 });
+    }
+    systemPrompt = getSystemPrompt(body.productType || "sneaker");
+    userPrompt = buildUserPrompt(body);
   }
 
-  const userPrompt = buildUserPrompt({ modelName, paletteName, materialName, aiMode, themeId, refineNote, signatureFeature, colorway, construction, render });
+  // Free provider: Pollinations (Flux) — no key, no cost. Returns a direct image
+  // URL the browser loads on demand. The agent's structured prompt drives it.
+  if (body.provider === "free") {
+    const safe = `${userPrompt} STRICT: absolutely no text, no numbers, no lettering, no logos or brand names anywhere in the image.`;
+    const image = `https://image.pollinations.ai/prompt/${encodeURIComponent(safe)}?width=1024&height=1024&model=flux&nologo=true`;
+    return Response.json({ image, prompt: userPrompt, provider: "free" });
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return Response.json({ error: "OPENROUTER_API_KEY not configured" }, { status: 500 });
+
   const t0 = Date.now();
 
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -35,7 +63,7 @@ export async function POST(req) {
       model: MODEL,
       modalities: ["image", "text"],
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
     }),
@@ -56,6 +84,8 @@ export async function POST(req) {
     image: imageUrl,
     elapsedMs: Date.now() - t0,
     prompt: userPrompt,
-    inputs: { modelName, paletteName, materialName, aiMode, themeId: themeId || null, refineNote: refineNote || null, signatureFeature: signatureFeature || null },
+    inputs: isSet
+      ? { productType: "set", items: body.items, sharedPalette: body.sharedPalette || null }
+      : { productType: body.productType || "sneaker", modelName: body.modelName, paletteName: body.paletteName, materialName: body.materialName, aiMode: body.aiMode || null, themeId: body.themeId || null, refineNote: body.refineNote || null, signatureFeature: body.signatureFeature || null },
   });
 }

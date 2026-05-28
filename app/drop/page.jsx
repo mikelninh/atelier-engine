@@ -2,8 +2,10 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { getSilhouette, ZONE_LABELS } from "@/lib/sneakerPrompt";
+import { getSilhouette, getZoneLabels } from "@/lib/productSpec";
 import { HEX, SneakerSVG, MATERIAL_BY_NAME, dropIdentity } from "../sneakerArt";
+
+const ZONE_LABELS = getZoneLabels("sneaker");
 
 // A shareable, numbered drop. The whole design is encoded in the ?d= param, so
 // the page is self-contained — no backend, the link IS the drop.
@@ -40,7 +42,7 @@ export default function Drop() {
   }
 
   const colors = design.c || {};
-  const zones = getSilhouette(design.m).zones;
+  const zones = getSilhouette("sneaker", design.m).zones;
   const material = MATERIAL_BY_NAME[design.mat];
 
   return (

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import designLibrary from "@/lib/designLibrary.json";
 import themedLibrary from "@/lib/themedLibrary.json";
-import { THEMES, findTheme } from "@/lib/sneakerPrompt";
+import { THEMES, findTheme } from "@/lib/productSpec";
 
 // Adapter: library entries (basePrice, slug) → the design shape the studio
 // uses (price, orders, commissionRate). Templates are starting points, so
@@ -680,7 +680,7 @@ export default function App() {
     if (generating) return;
     setGenerating(true);
     try {
-      const themeLabel = findTheme(themeId)?.label || "";
+      const themeLabel = findTheme("sneaker", themeId)?.label || "";
       const tasks = Array.from({ length: count }, () => generateOnce());
       const results = await Promise.allSettled(tasks);
       const newSketches = results
