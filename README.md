@@ -2,6 +2,8 @@
 
 **The creator commerce platform for sneaker brands.**
 
+[🚀 Open the live demo](https://mikelninh.github.io/atelier-engine/) · [💻 View source](https://github.com/mikelninh/atelier-engine) · [🛠 Run locally](#local-development)
+
 Design it live. Launch it as a sneaker brand. From first sketch to global sales —
 creators build micro-brands; the platform handles made-to-order production,
 fulfilment, and growth.
@@ -9,6 +11,8 @@ fulfilment, and growth.
 This repo contains the early concept dashboard: a single-page React app that
 walks through the live design preview, the demand-and-commission economics,
 the marketplace pulse, and the two-path business model.
+
+> **Current status:** interactive product concept. The design studio and business-model simulation run in the browser; manufacturing, payments, creator onboarding and marketplace persistence are still roadmap work.
 
 ---
 
@@ -114,7 +118,7 @@ test, it does not ship.
 | Frontend | React 18 + Vite |
 | Styling | Tailwind CSS 3 (warm paper palette, sage accent) |
 | Fonts | Cormorant Garamond (display) · Inter Tight (body) |
-| Hosting | Vercel-ready (zero-config Vite deploy) |
+| Hosting | GitHub Pages |
 | License | MIT |
 
 ---
