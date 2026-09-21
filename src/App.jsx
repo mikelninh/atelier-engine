@@ -27,7 +27,7 @@ function decodeSharedSneaker() {
   try {
     const dna = new URLSearchParams(window.location.search).get("dna");
     if (!dna) return null;
-    const parsed = JSON.parse(atob(dna.replace(/-/g, "+").replace(/_/g, "/")));
+    const base64 = dna.replace(/-/g, "+").replace(/_/g, "/");\n    const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);\n    const parsed = JSON.parse(atob(padded));
     if (!parsed || !WORLDS[parsed.world] || !PALETTES[parsed.palette]) return null;
     return parsed;
   } catch {
