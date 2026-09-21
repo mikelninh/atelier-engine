@@ -2,6 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body { background: #f5efe7; }
-body { font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif; }
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* { box-sizing: border-box; }
+html { background: #f3efe8; }
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #f3efe8;
+  font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; }
+button { -webkit-tap-highlight-color: transparent; }
 .font-serif { font-family: "Cormorant Garamond", Georgia, serif; }
+
+.shoe-primary { fill: var(--primary); }
+.shoe-primary-light { fill: color-mix(in srgb, var(--primary), white 30%); }
+.shoe-secondary { fill: var(--secondary); }
+.shoe-accent { fill: var(--accent); }
+.shoe-sole { fill: var(--sole); stroke: color-mix(in srgb, var(--accent), transparent 68%); stroke-width: 2.5; stroke-linejoin: round; }
+.shoe-accent-stroke { stroke: var(--accent); stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
+.shoe-accent-stroke.thin { stroke-width: 4; }
+.shoe-secondary-stroke { stroke: var(--secondary); stroke-width: 8; stroke-linecap: round; }
+
+.pixel-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  object-fit: contain;
+}
+
+.atelier-range {
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(20,18,16,.11);
+  outline: none;
+}
+.atelier-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #171512;
+  border: 4px solid #f8f5ef;
+  box-shadow: 0 1px 8px rgba(0,0,0,.16);
+}
+.atelier-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #171512;
+  border: 4px solid #f8f5ef;
+  box-shadow: 0 1px 8px rgba(0,0,0,.16);
+}
+
+::selection { background: #1b1a18; color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}

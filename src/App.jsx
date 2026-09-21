@@ -1,441 +1,295 @@
 import React, { useMemo, useState } from "react";
+import {
+  DIRECTIONS,
+  PALETTES,
+  buildTasteProfile,
+  createInitialSneaker,
+  estimatePrice,
+  generateDescendants,
+  scoreSneaker,
+} from "./sneakerEngine.js";
+import { PixelSneaker, SneakerVisual, exportPixelSneaker } from "./SneakerVisual.jsx";
 
-// Placeholder sneaker imagery — swap for real photography in /public/sneakers/
-// once available. The placehold.co URLs use Atelier Engine palette tokens so
-// the dashboard ships visually intact out of the box.
-const sneakerImages = {
-  minimalRunner: "https://placehold.co/640x440/e9e4d8/282521?text=Aeris+Flow",
-  retroCourt:    "https://placehold.co/640x440/f4efe4/173f32?text=Court+Heritage",
-  futureMule:    "https://placehold.co/640x440/d8bfa0/171615?text=Future+Slip",
-  trailBeast:    "https://placehold.co/640x440/0c0d10/2f5ea8?text=Trailforge+X",
+const directionFromText = (value) => {
+  const text = value.toLowerCase();
+  if (/lux|premium|minimal|quiet|elegant/.test(text)) return "luxury";
+  if (/tech|future|tokyo|cyber|performance/.test(text)) return "technical";
+  if (/weird|strange|alien|experimental|wild/.test(text)) return "stranger";
+  if (/wear|daily|simple|clean|normal/.test(text)) return "wearable";
+  if (/sleek|slim|light|fast|low/.test(text)) return "sleeker";
+  return "wild";
 };
 
-const materials = [
-  { name: "Pearl Knit", finish: "Adaptive woven textile", price: 24, demandBoost: 4 },
-  { name: "Cloud Suede", finish: "Soft premium nap", price: 39, demandBoost: 6 },
-  { name: "Bio Leather", finish: "Plant-based upper", price: 49, demandBoost: 9 },
-  { name: "Carbon Mesh", finish: "Performance weave", price: 59, demandBoost: 8 },
-];
-
-const palettes = [
-  { name: "Moonstone", primary: "#E9E4D8", secondary: "#B8B1A2", accent: "#282521", trendBoost: 7 },
-  { name: "Forest Gum", primary: "#F4EFE4", secondary: "#173F32", accent: "#B67633", trendBoost: 9 },
-  { name: "Sand Future", primary: "#D8BFA0", secondary: "#A58F76", accent: "#171615", trendBoost: 8 },
-  { name: "Cobalt Trail", primary: "#0C0D10", secondary: "#263042", accent: "#2F5EA8", trendBoost: 10 },
-];
-
-const models = [
-  { name: "Aeris Flow", category: "chunky lifestyle runner", baseDemand: 91, iconDNA: "New Balance / Asics / luxury runner energy" },
-  { name: "Court Heritage", category: "retro court sneaker", baseDemand: 94, iconDNA: "Samba / Dunk / Gazelle / Jordan low-top energy" },
-  { name: "Future Slip", category: "comfort mule sneaker", baseDemand: 82, iconDNA: "foam runner / recovery mule / fashion-tech energy" },
-  { name: "Trailforge X", category: "performance trail sneaker", baseDemand: 87, iconDNA: "Salomon / techwear / outdoor crossover energy" },
-];
-
-const aiModes = ["Luxury Minimalist", "Street Ritual", "Performance Beast", "Collector Grail"];
-
-const brandModes = [
-  {
-    id: "own-brand",
-    title: "Build our own brand",
-    subtitle: "Create and launch a flagship sneaker brand with full control and ownership.",
-    commissionLabel: "Gross margin",
-    defaultRate: 38,
-    note: "Best when we want long-term brand equity, stronger margins, and a recognisable design language.",
-  },
-  {
-    id: "creator-platform",
-    title: "Creator micro-brands",
-    subtitle: "Creators launch niche sneaker drops while we power production, storefronts, and tools.",
-    commissionLabel: "Creator commission",
-    defaultRate: 25,
-    note: "Best for scale: many creators, many niches, more data, and faster demand discovery.",
-  },
-];
-
-const popularDesigns = [
-  { rank: 1, name: "Aeris Flow", creator: "MotionLab", image: sneakerImages.minimalRunner, modelName: "Aeris Flow", paletteName: "Moonstone", materialName: "Pearl Knit", price: 249, orders: 2451, commissionRate: 25, tagline: "Light. Balanced. Effortless.", badge: "Bestseller" },
-  { rank: 2, name: "Court Heritage", creator: "Court Culture", image: sneakerImages.retroCourt, modelName: "Court Heritage", paletteName: "Forest Gum", materialName: "Bio Leather", price: 219, orders: 1892, commissionRate: 22, tagline: "Retro soul. Modern edge.", badge: "Mass Appeal" },
-  { rank: 3, name: "Future Slip", creator: "Vision Collective", image: sneakerImages.futureMule, modelName: "Future Slip", paletteName: "Sand Future", materialName: "Cloud Suede", price: 279, orders: 1376, commissionRate: 26, tagline: "Not from now. From next.", badge: "Hype Pick" },
-  { rank: 4, name: "Trailforge X", creator: "Wild Origins", image: sneakerImages.trailBeast, modelName: "Trailforge X", paletteName: "Cobalt Trail", materialName: "Carbon Mesh", price: 259, orders: 1105, commissionRate: 24, tagline: "Built wild. Made to endure.", badge: "Performance" },
-];
-
-const marketArchetypes = [
-  { name: "Retro Court", popularity: 94, examples: "Samba, Dunk, Gazelle, Jordan lows", audience: "streetwear + collectors", commissionBoost: 2 },
-  { name: "Chunky Runner", popularity: 91, examples: "Asics, New Balance, dad-shoe runners", audience: "comfort + fashion", commissionBoost: 1 },
-  { name: "Foam Future", popularity: 88, examples: "foam runners, recovery shoes, mules", audience: "comfort rebels + hype buyers", commissionBoost: 1 },
-  { name: "Trail Tech", popularity: 89, examples: "Salomon, techwear trail shoes", audience: "outdoor + fashion crossover", commissionBoost: 2 },
-];
-
-export function calculateSneakerPrice(materialPrice, soleBoldness) {
-  const basePrice = 189;
-  const safeMaterialPrice = Number.isFinite(materialPrice) ? materialPrice : 0;
-  const safeSoleBoldness = Number.isFinite(soleBoldness) ? soleBoldness : 0;
-  return basePrice + safeMaterialPrice + Math.round(safeSoleBoldness / 2);
+function Icon({ children }) {
+  return <span className="grid h-8 w-8 place-items-center rounded-full border border-black/10 bg-white/70 text-sm">{children}</span>;
 }
 
-export function calculateCommission(orderPrice, commissionRate) {
-  const safeOrderPrice = Number.isFinite(orderPrice) ? orderPrice : 0;
-  const safeCommissionRate = Number.isFinite(commissionRate) ? commissionRate : 0;
-  return Number((safeOrderPrice * (safeCommissionRate / 100)).toFixed(2));
-}
-
-export function estimateDemandScore(modelDemand, paletteTrendBoost, materialDemandBoost, styleMatch, price) {
-  const safeModelDemand = Number.isFinite(modelDemand) ? modelDemand : 0;
-  const safePaletteBoost = Number.isFinite(paletteTrendBoost) ? paletteTrendBoost : 0;
-  const safeMaterialBoost = Number.isFinite(materialDemandBoost) ? materialDemandBoost : 0;
-  const safeStyleMatch = Number.isFinite(styleMatch) ? styleMatch : 0;
-  const safePrice = Number.isFinite(price) ? price : 0;
-  const pricePenalty = safePrice > 260 ? Math.round((safePrice - 260) / 10) : 0;
-  const score = Math.round(safeModelDemand * 0.44 + safeStyleMatch * 0.34 + safePaletteBoost + safeMaterialBoost - pricePenalty);
-  return Math.max(1, Math.min(100, score));
-}
-
-export function estimateMonthlyOrders(demandScore, socialHeat, price) {
-  const safeDemandScore = Number.isFinite(demandScore) ? demandScore : 0;
-  const safeSocialHeat = Number.isFinite(socialHeat) ? socialHeat : 0;
-  const safePrice = Number.isFinite(price) ? price : 0;
-  const pricePenalty = safePrice > 260 ? Math.round((safePrice - 260) / 6) : 0;
-  return Math.max(0, Math.round(safeDemandScore * 11 + safeSocialHeat * 4.5 - pricePenalty));
-}
-
-export function estimateMonthlyUpside(monthlyOrders, commissionPerPair) {
-  const safeOrders = Number.isFinite(monthlyOrders) ? monthlyOrders : 0;
-  const safeCommission = Number.isFinite(commissionPerPair) ? commissionPerPair : 0;
-  return Math.round(safeOrders * safeCommission);
-}
-
-export function getStyleMatch(aiMode, materialName, modelName) {
-  const modeBonus = { "Luxury Minimalist": 4, "Street Ritual": 6, "Performance Beast": 7, "Collector Grail": 9 };
-  const materialBonus = materialName === "Carbon Mesh" ? 3 : materialName === "Bio Leather" ? 2 : 1;
-  const modelBonus = modelName === "Court Heritage" || modelName === "Aeris Flow" ? 2 : 0;
-  return Math.min(99, 85 + (modeBonus[aiMode] || 0) + materialBonus + modelBonus);
-}
-
-export function getBestMarketArchetype(modelName) {
-  if (modelName === "Court Heritage") return marketArchetypes[0];
-  if (modelName === "Aeris Flow") return marketArchetypes[1];
-  if (modelName === "Future Slip") return marketArchetypes[2];
-  return marketArchetypes[3];
-}
-
-export function getEntityByName(list, name, fallbackIndex = 0) {
-  return list.find((item) => item.name === name) || list[fallbackIndex];
-}
-
-export const sneakerCustomizerTests = [
-  { name: "base price includes material and rounded sole surcharge", passed: calculateSneakerPrice(24, 42) === 234 },
-  { name: "zero sole boldness keeps only base plus material", passed: calculateSneakerPrice(39, 0) === 228 },
-  { name: "invalid price inputs fail safely instead of crashing", passed: calculateSneakerPrice(Number.NaN, Number.NaN) === 189 },
-  { name: "maximum sole boldness adds fifty euros", passed: calculateSneakerPrice(59, 100) === 298 },
-  { name: "commission keeps cents for realistic economics", passed: calculateCommission(249, 25) === 62.25 },
-  { name: "commission handles invalid input safely", passed: calculateCommission(Number.NaN, 25) === 0 },
-  { name: "demand score never exceeds one hundred", passed: estimateDemandScore(200, 50, 50, 200, 100) === 100 },
-  { name: "monthly orders never go below zero", passed: estimateMonthlyOrders(1, 0, 1200) === 0 },
-  { name: "Court Heritage maps to retro court market archetype", passed: getBestMarketArchetype("Court Heritage").name === "Retro Court" },
-  { name: "monthly upside multiplies order volume by commission", passed: estimateMonthlyUpside(100, 62.25) === 6225 },
-  { name: "popular design lookup resolves palette by name", passed: getEntityByName(palettes, "Cobalt Trail").accent === "#2F5EA8" },
-  { name: "missing lookup falls back safely", passed: getEntityByName(materials, "Missing Material").name === "Pearl Knit" },
-  { name: "all popular designs have image paths", passed: popularDesigns.every((design) => Boolean(design.image)) },
-];
-
-function Card({ children, className = "" }) {
-  return <div className={`rounded-[2rem] border border-black/5 shadow-xl ${className}`}>{children}</div>;
-}
-
-function Button({ children, className = "", variant = "solid", ...props }) {
-  const base = "inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-medium transition active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-black/20 disabled:cursor-not-allowed disabled:opacity-50";
-  const styles = variant === "outline" ? "border border-[#d9d0c4] bg-white/60 text-[#191714] hover:bg-white" : "bg-[#191714] text-white hover:bg-[#302d28] shadow-lg shadow-black/10";
-  return <button className={`${base} ${styles} ${className}`} {...props}>{children}</button>;
-}
-
-function Icon({ name, className = "w-4 h-4" }) {
-  const common = { className, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round", "aria-hidden": true };
-  const icons = {
-    arrow: <svg {...common}><path d="M7 17L17 7" /><path d="M8 7h9v9" /></svg>,
-    bag: <svg {...common}><path d="M6 8h12l-1 12H7L6 8z" /><path d="M9 8a3 3 0 0 1 6 0" /></svg>,
-    bell: <svg {...common}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" /><path d="M10 21h4" /></svg>,
-    chart: <svg {...common}><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 15l3-4 3 2 5-7" /></svg>,
-    check: <svg {...common}><path d="M20 6L9 17l-5-5" /></svg>,
-    chevron: <svg {...common}><path d="M9 18l6-6-6-6" /></svg>,
-    cube: <svg {...common}><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" /><path d="M4 7.5l8 4.5 8-4.5" /><path d="M12 12v9" /></svg>,
-    heart: <svg {...common}><path d="M20.8 8.6c0 5.6-8.8 10.4-8.8 10.4S3.2 14.2 3.2 8.6A4.6 4.6 0 0 1 12 6.4a4.6 4.6 0 0 1 8.8 2.2z" /></svg>,
-    info: <svg {...common}><circle cx="12" cy="12" r="9" /><path d="M12 10v6" /><path d="M12 7h.01" /></svg>,
-    palette: <svg {...common}><path d="M12 3a9 9 0 0 0 0 18h1.5a2 2 0 0 0 1.4-3.4 1.7 1.7 0 0 1 1.2-2.9H18a6 6 0 0 0 0-12h-6z" /></svg>,
-    people: <svg {...common}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
-    rocket: <svg {...common}><path d="M4.5 16.5c-1.2 1.2-1.5 3-1.5 4.5 1.5 0 3.3-.3 4.5-1.5" /><path d="M9 15l-3 3" /><path d="M15 9l-6 6" /><path d="M14 4l6 6-5 5-6-6 5-5z" /></svg>,
-    search: <svg {...common}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3-3" /></svg>,
-    sliders: <svg {...common}><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /><circle cx="8" cy="6" r="2" /><circle cx="14" cy="12" r="2" /><circle cx="10" cy="18" r="2" /></svg>,
-    sparkles: <svg {...common}><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" /></svg>,
-    upload: <svg {...common}><path d="M12 16V4" /><path d="M7 9l5-5 5 5" /><path d="M5 20h14" /></svg>,
-  };
-  return icons[name] || icons.check;
-}
-
-function formatCurrency(value) {
-  return `€${Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 })}`;
-}
-
-function MiniLine() {
+function Pill({ children, active = false, onClick }) {
   return (
-    <svg viewBox="0 0 120 34" className="h-9 w-28 text-green-600" fill="none" aria-hidden="true">
-      <path d="M4 27C18 27 17 23 31 24C45 25 42 20 55 21C69 22 70 15 83 16C96 17 101 10 116 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
-      <path d="M111 6h5v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    <button
+      onClick={onClick}
+      className={"rounded-full border px-3.5 py-2 text-sm transition " + (
+        active
+          ? "border-[#161513] bg-[#161513] text-white shadow-lg"
+          : "border-black/10 bg-white/60 text-[#5f5850] hover:bg-white"
+      )}
+    >
+      {children}
+    </button>
   );
 }
 
-function Donut({ value, suffix = "%" }) {
-  const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
+function Metric({ label, value }) {
   return (
-    <div className="relative h-20 w-20 rounded-full grid place-items-center" style={{ background: `conic-gradient(#9b8066 ${safeValue * 3.6}deg, #eadfd2 0deg)` }}>
-      <div className="h-14 w-14 rounded-full bg-white grid place-items-center text-sm font-semibold">{safeValue}{suffix}</div>
+    <div>
+      <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[.16em] text-white/45">
+        <span>{label}</span><span>{value}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <div className="h-full rounded-full bg-white/75" style={{ width: value + "%" }} />
+      </div>
     </div>
   );
 }
 
-function ProductImage({ design, className = "" }) {
-  return (
-    <div className={`relative overflow-hidden rounded-[1.5rem] bg-[#f6f1ea] ${className}`}>
-      <img src={design.image} alt={`${design.name} sneaker design`} className="h-full w-full object-cover" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/[0.03]" />
-    </div>
-  );
-}
+function Candidate({ sneaker, index, onChoose }) {
+  const score = scoreSneaker(sneaker);
+  const palette = PALETTES[sneaker.palette];
 
-function Header() {
   return (
-    <header className="mb-5 flex flex-col gap-4 rounded-[2rem] border border-black/5 bg-white/70 p-4 shadow-xl shadow-black/[0.04] backdrop-blur md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-8">
-        <div className="font-serif text-2xl tracking-[0.18em]">ATELIER ENGINE</div>
-        <nav className="hidden items-center gap-2 text-sm lg:flex">
-          {["Dashboard", "Design Studio", "Marketplace", "Orders", "Analytics", "Resources"].map((item, index) => (
-            <button key={item} className={`rounded-2xl px-4 py-2 transition ${index === 0 ? "bg-[#eadfd2]" : "hover:bg-[#f4ece3]"}`}>{item}</button>
-          ))}
-        </nav>
-      </div>
-      <div className="flex items-center justify-between gap-4 md:justify-end">
-        <button className="rounded-full p-2 hover:bg-[#f4ece3]" aria-label="Search"><Icon name="search" className="h-5 w-5" /></button>
-        <button className="relative rounded-full p-2 hover:bg-[#f4ece3]" aria-label="Notifications">
-          <Icon name="bell" className="h-5 w-5" />
-          <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-[#9b8066] text-[10px] text-white">3</span>
-        </button>
-        <div className="flex items-center gap-3 border-l border-black/10 pl-4">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#d9c8b8] font-serif text-lg">A</div>
-          <div className="hidden sm:block"><p className="text-sm font-semibold">Alex Mercer</p><p className="text-xs text-[#786f64]">Creator</p></div>
+    <button
+      onClick={() => onChoose(sneaker)}
+      className="group overflow-hidden rounded-[1.8rem] border border-black/[0.07] bg-white/60 text-left shadow-[0_12px_50px_rgba(60,48,36,.06)] transition duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-[0_24px_70px_rgba(60,48,36,.12)]"
+    >
+      <div className="relative h-48 overflow-hidden" style={{ background: "linear-gradient(145deg, " + palette.sole + ", #f8f5ef)" }}>
+        <SneakerVisual sneaker={sneaker} className="h-full w-full scale-[1.08] transition duration-500 group-hover:scale-[1.13]" />
+        <div className="absolute left-3 top-3 rounded-full bg-white/75 px-2.5 py-1 text-[10px] uppercase tracking-[.18em] backdrop-blur">
+          {"0" + (index + 1)}
+        </div>
+        <div className="absolute bottom-3 right-3 opacity-0 transition group-hover:opacity-100">
+          <span className="rounded-full bg-[#171512] px-3 py-2 text-xs text-white">Make parent →</span>
         </div>
       </div>
-    </header>
-  );
-}
-
-function Hero({ onStart }) {
-  return (
-    <section className="space-y-6 lg:pr-6">
-      <div className="inline-flex rounded-xl bg-[#ead8c5] px-3 py-2 text-xs uppercase tracking-wide text-[#7b5d43]">The creator commerce platform for sneaker brands</div>
-      <div>
-        <h1 className="font-serif text-5xl leading-[0.95] tracking-tight md:text-6xl">Design it live.<br />Launch it as a sneaker brand.</h1>
-        <p className="mt-5 max-w-md text-lg leading-relaxed text-[#6f665d]">From first sketch to global sales. Creators build micro-brands, we handle made-to-order production, fulfilment, and growth.</p>
-      </div>
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={onStart}>Start Designing <Icon name="arrow" /></Button>
-        <Button variant="outline">How it works <span className="grid h-6 w-6 place-items-center rounded-full border border-black/20">▶</span></Button>
-      </div>
-    </section>
-  );
-}
-
-function ToolRail() {
-  const tools = [["palette", "Materials"], ["sliders", "Colors"], ["cube", "Details"], ["upload", "Branding"]];
-  return (
-    <div className="absolute left-4 top-16 z-10 hidden rounded-[1.4rem] border border-black/5 bg-white/75 p-2 shadow-xl backdrop-blur md:block">
-      {tools.map(([icon, label]) => (
-        <button key={label} className="flex w-16 flex-col items-center gap-1 rounded-2xl px-2 py-3 text-xs text-[#6f665d] hover:bg-[#f4ece3]">
-          <Icon name={icon} /><span>{label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function LiveDesignPreview({ selectedDesign, price, styleMatch, demandScore, commission, published }) {
-  return (
-    <Card className="relative overflow-hidden bg-white/65">
-      <div className="flex items-center justify-between border-b border-black/5 px-5 py-4">
-        <div><p className="text-xs uppercase tracking-[0.22em] text-[#786f64]">Live Design Preview</p><h2 className="text-xl font-semibold">{selectedDesign.name}</h2></div>
-        <div className="flex items-center gap-2 text-sm text-green-700"><span className="h-2 w-2 rounded-full bg-green-600" />{published ? "Marketplace Live" : "Live"}</div>
-      </div>
-      <div className="relative min-h-[420px] bg-gradient-to-br from-[#f4ece3] via-[#f8f4ee] to-[#e8ded2] p-5 md:min-h-[520px]">
-        <ToolRail />
-        <ProductImage design={selectedDesign} className="mx-auto h-[330px] max-w-[760px] md:h-[430px]" />
-        <div className="absolute bottom-5 right-5 rounded-3xl border border-black/5 bg-white/85 p-5 shadow-xl backdrop-blur">
-          <p className="text-xs text-[#786f64]">Estimated made-to-order price</p>
-          <div className="mt-1 flex items-end gap-4"><p className="text-4xl font-semibold">€{price}</p><span className="mb-1 rounded-full bg-[#f4ece3] px-3 py-1 text-xs">EUR ⌄</span></div>
-        </div>
-        <div className="absolute bottom-5 left-5 flex gap-2">
-          {["↶", "↻", "↗"].map((item) => <button key={item} className="grid h-11 w-11 place-items-center rounded-full bg-white/80 shadow-md backdrop-blur">{item}</button>)}
-        </div>
-      </div>
-      <div className="grid grid-cols-3 gap-3 p-4">
-        <div className="rounded-2xl bg-[#f7f2e8] p-3"><p className="text-xs text-[#786f64]">Style match</p><p className="text-xl font-semibold">{styleMatch}%</p></div>
-        <div className="rounded-2xl bg-[#f7f2e8] p-3"><p className="text-xs text-[#786f64]">Demand</p><p className="text-xl font-semibold">{demandScore}/100</p></div>
-        <div className="rounded-2xl bg-[#f7f2e8] p-3"><p className="text-xs text-[#786f64]">Creator earns</p><p className="text-xl font-semibold">{formatCurrency(commission)}</p></div>
-      </div>
-    </Card>
-  );
-}
-
-function MetricPanel({ styleMatch, demandScore, commission, monthlyOrders, monthlyUpside, commissionRate, onPublish }) {
-  const metrics = [
-    { title: "Style Match", subtitle: "How well your design resonates", value: styleMatch, suffix: "%" },
-    { title: "Demand Score", subtitle: "Predicted market demand", value: demandScore, suffix: "/100" },
-  ];
-  return (
-    <Card className="bg-white/70 p-5">
-      <div className="mb-5 flex items-center justify-between"><h2 className="text-lg font-semibold">Performance Overview</h2><Icon name="sparkles" className="text-[#9b8066]" /></div>
-      <div className="space-y-3">
-        {metrics.map((metric) => (
-          <div key={metric.title} className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-2"><p className="font-semibold">{metric.title}</p><Icon name="info" className="h-3.5 w-3.5 text-[#9b8066]" /></div>
-                <p className="mt-1 text-xs text-[#786f64]">{metric.subtitle}</p>
-                <MiniLine />
-              </div>
-              <Donut value={metric.value} suffix={metric.suffix === "%" ? "%" : ""} />
-            </div>
+      <div className="p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="font-medium capitalize">{sneaker.upper} / {sneaker.sole}</p>
+            <p className="text-xs capitalize text-[#877e73]">{sneaker.material} · {palette.name}</p>
           </div>
-        ))}
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-2"><p className="font-semibold">Creator Commission</p><Icon name="info" className="h-3.5 w-3.5 text-[#9b8066]" /></div>
-              <p className="mt-1 text-xs text-[#786f64]">Per pair after fulfilment</p>
-              <p className="mt-3 text-3xl font-semibold">{formatCurrency(commission)}</p>
-            </div>
-            <div className="rounded-2xl bg-[#eadfd2] px-4 py-2 text-sm font-semibold">{commissionRate}%</div>
-          </div>
+          <PixelSneaker sneaker={sneaker} className="h-10 w-20" />
         </div>
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
-          <p className="font-semibold">Monthly Orders</p><p className="mt-1 text-xs text-[#786f64]">Projected next 30 days</p>
-          <div className="mt-3 flex items-end justify-between"><p className="text-3xl font-semibold">{monthlyOrders.toLocaleString()}</p><p className="text-sm text-green-700">↑ 18.6%</p></div>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl bg-black/[0.035] px-2 py-2"><b className="block text-sm">{score.novelty}</b><span className="text-[9px] uppercase tracking-wider text-[#8b8176]">novel</span></div>
+          <div className="rounded-xl bg-black/[0.035] px-2 py-2"><b className="block text-sm">{score.wearability}</b><span className="text-[9px] uppercase tracking-wider text-[#8b8176]">wear</span></div>
+          <div className="rounded-xl bg-black/[0.035] px-2 py-2"><b className="block text-sm">{score.production}</b><span className="text-[9px] uppercase tracking-wider text-[#8b8176]">make</span></div>
         </div>
-        <div className="rounded-3xl border border-black/5 bg-white p-5 shadow-sm">
-          <p className="font-semibold">Monthly Upside</p><p className="mt-1 text-xs text-[#786f64]">Projected creator profit</p>
-          <div className="mt-3 flex items-end justify-between"><p className="text-3xl font-semibold">{formatCurrency(monthlyUpside)}</p><p className="text-sm text-green-700">↑ 21.4%</p></div>
-        </div>
-      </div>
-      <div className="mt-5 space-y-3"><Button onClick={onPublish} className="w-full py-4">Go Live <Icon name="rocket" /></Button><Button variant="outline" className="w-full py-4"><Icon name="cube" /> Simulate Variants</Button></div>
-    </Card>
-  );
-}
-
-function ProductCard({ design, active, onSelect }) {
-  const commission = calculateCommission(design.price, design.commissionRate);
-  return (
-    <button onClick={() => onSelect(design)} className={`group rounded-[1.7rem] border p-3 text-left shadow-md transition hover:-translate-y-1 hover:shadow-xl ${active ? "border-[#191714] bg-white" : "border-black/5 bg-white/75"}`}>
-      <div className="mb-2 flex items-center justify-between">
-        <span className="rounded-full bg-[#191714] px-3 py-1 text-xs text-white">#{design.rank} trending</span>
-        <span className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm"><Icon name="heart" /></span>
-      </div>
-      <ProductImage design={design} className="h-44" />
-      <div className="mt-3 flex items-start justify-between gap-2">
-        <div><h3 className="font-semibold uppercase tracking-wide">{design.name}</h3><p className="text-sm text-[#786f64]">by {design.creator}</p></div>
-        {design.badge && <span className="rounded-xl bg-[#eadfd2] px-2 py-1 text-xs text-[#7b5d43]">{design.badge}</span>}
-      </div>
-      <div className="mt-3 flex items-center justify-between border-t border-[#e8dfd2] pt-3 text-sm">
-        <div><p className="text-[#786f64]">{design.orders.toLocaleString()} orders</p><p className="text-xs text-[#786f64]">{design.tagline}</p></div>
-        <div className="text-right"><p className="text-lg font-semibold">€{design.price}</p><p className="text-xs text-[#786f64]">Earn {formatCurrency(commission)}</p></div>
       </div>
     </button>
   );
 }
 
-function Marketplace({ selectedDesign, onSelect }) {
+function Trait({ label, value }) {
   return (
-    <Card className="bg-white/50 p-4">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <div><p className="text-xs uppercase tracking-[0.18em] text-[#786f64]">Marketplace pulse</p><h2 className="text-2xl font-semibold">Most popular creator sneakers</h2></div>
-        <div className="hidden items-center gap-2 md:flex">
-          <Button variant="outline" className="px-3 py-1.5">View all</Button>
-          <button className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">‹</button>
-          <button className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-sm">›</button>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {popularDesigns.map((design) => <ProductCard key={design.name} design={design} active={selectedDesign.name === design.name} onSelect={onSelect} />)}
-      </div>
-    </Card>
-  );
-}
-
-function BusinessModel({ brandMode, onSwitch }) {
-  return (
-    <Card className="bg-[#efe4d8] p-5">
-      <div className="grid gap-4 md:grid-cols-[0.7fr_1fr_1fr] md:items-center">
-        <div><h2 className="font-serif text-3xl leading-tight">Two paths.<br />One platform.</h2><p className="mt-3 text-sm text-[#786f64]">Choose how you want to build and grow your sneaker brand.</p></div>
-        {brandModes.map((mode) => (
-          <button key={mode.id} onClick={() => onSwitch(mode)} className={`flex items-center justify-between rounded-[1.5rem] border p-5 text-left transition ${brandMode.id === mode.id ? "border-[#191714] bg-white" : "border-black/5 bg-white/50 hover:bg-white"}`}>
-            <div className="flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-full bg-[#eadfd2]"><Icon name={mode.id === "own-brand" ? "bag" : "people"} className="h-6 w-6" /></div>
-              <div><p className="font-semibold">{mode.title}</p><p className="mt-1 text-sm text-[#786f64]">{mode.subtitle}</p></div>
-            </div>
-            <Icon name="chevron" />
-          </button>
-        ))}
-      </div>
-    </Card>
+    <div className="flex items-center justify-between border-b border-black/[0.06] py-2.5 text-sm last:border-0">
+      <span className="text-[#80766b]">{label}</span>
+      <span className="font-medium capitalize">{value}</span>
+    </div>
   );
 }
 
 export default function App() {
-  const [selectedDesign, setSelectedDesign] = useState(popularDesigns[0]);
-  const [aiMode, setAiMode] = useState("Collector Grail");
-  const [brandMode, setBrandMode] = useState(brandModes[1]);
-  const [published, setPublished] = useState(false);
+  const [parent, setParent] = useState(createInitialSneaker());
+  const [direction, setDirection] = useState("wild");
+  const [generation, setGeneration] = useState(1);
+  const [history, setHistory] = useState([]);
+  const [prompt, setPrompt] = useState("");
+  const [view, setView] = useState("atelier");
 
-  const selectedModel = getEntityByName(models, selectedDesign.modelName);
-  const selectedPalette = getEntityByName(palettes, selectedDesign.paletteName);
-  const selectedMaterial = getEntityByName(materials, selectedDesign.materialName);
-  const archetype = getBestMarketArchetype(selectedModel.name);
-  const effectiveCommissionRate = selectedDesign.commissionRate + (brandMode.id === "creator-platform" ? 0 : archetype.commissionBoost);
+  const descendants = useMemo(
+    () => generateDescendants(parent, direction, generation),
+    [parent, direction, generation]
+  );
+  const score = useMemo(() => scoreSneaker(parent), [parent]);
+  const taste = useMemo(() => buildTasteProfile(history), [history]);
+  const palette = PALETTES[parent.palette];
+  const price = estimatePrice(parent);
 
-  const styleMatch = useMemo(() => getStyleMatch(aiMode, selectedMaterial.name, selectedModel.name), [aiMode, selectedMaterial.name, selectedModel.name]);
-  const demandScore = useMemo(() => estimateDemandScore(selectedModel.baseDemand, selectedPalette.trendBoost, selectedMaterial.demandBoost, styleMatch, selectedDesign.price), [selectedModel, selectedPalette, selectedMaterial, styleMatch, selectedDesign.price]);
-  const commission = useMemo(() => calculateCommission(selectedDesign.price, effectiveCommissionRate), [selectedDesign.price, effectiveCommissionRate]);
-  const monthlyOrders = useMemo(() => estimateMonthlyOrders(demandScore, selectedDesign.orders / 100, selectedDesign.price), [demandScore, selectedDesign.orders, selectedDesign.price]);
-  const monthlyUpside = useMemo(() => estimateMonthlyUpside(monthlyOrders, commission), [monthlyOrders, commission]);
-  const allTestsPassed = sneakerCustomizerTests.every((test) => test.passed);
+  const choose = (sneaker) => {
+    setHistory((items) => [...items, sneaker]);
+    setParent(sneaker);
+    setGeneration((g) => g + 1);
+  };
 
-  function selectDesign(design) {
-    setSelectedDesign(design);
-    setAiMode(design.name === "Trailforge X" ? "Performance Beast" : "Collector Grail");
-    setPublished(false);
-  }
+  const updateNumber = (key, value) => {
+    setParent((current) => ({ ...current, [key]: Number(value), seed: current.seed + 1 }));
+    setGeneration((g) => g + 1);
+  };
+
+  const applyPrompt = () => {
+    if (!prompt.trim()) return;
+    setDirection(directionFromText(prompt));
+    setGeneration((g) => g + 1);
+  };
 
   return (
-    <div className="min-h-screen bg-[#f5efe7] p-3 text-[#191714] md:p-5">
-      <div className="mx-auto max-w-[1800px]">
-        <Header />
-        <main className="grid gap-5 xl:grid-cols-[0.95fr_1.55fr_0.85fr]">
-          <Hero onStart={() => setPublished(true)} />
-          <LiveDesignPreview selectedDesign={selectedDesign} price={selectedDesign.price} styleMatch={styleMatch} demandScore={demandScore} commission={commission} published={published} />
-          <MetricPanel styleMatch={styleMatch} demandScore={demandScore} commission={commission} monthlyOrders={monthlyOrders} monthlyUpside={monthlyUpside} commissionRate={effectiveCommissionRate} onPublish={() => setPublished(true)} />
+    <div className="min-h-screen bg-[#f3efe8] text-[#171512]">
+      <div className="mx-auto max-w-[1600px] px-4 pb-16 pt-4 md:px-6">
+        <header className="sticky top-3 z-40 mb-5 flex items-center justify-between rounded-full border border-black/[0.07] bg-[#f8f5ef]/85 px-4 py-2.5 shadow-[0_10px_40px_rgba(53,43,31,.07)] backdrop-blur-xl md:px-5">
+          <div className="flex items-center gap-3">
+            <div className="grid h-9 w-9 place-items-center rounded-full bg-[#171512] text-xs font-semibold text-white">AE</div>
+            <div>
+              <div className="font-serif text-xl leading-none tracking-[.09em]">SNEAKER ATELIER</div>
+              <div className="mt-0.5 text-[9px] uppercase tracking-[.24em] text-[#8c8175]">design at the speed of thought</div>
+            </div>
+          </div>
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="rounded-full bg-[#dce8d9] px-3 py-1.5 text-xs text-[#35543a]">● instant engine</span>
+            <span className="rounded-full bg-[#e9dfd3] px-3 py-1.5 text-xs text-[#6b5947]">Jev-ready</span>
+          </div>
+        </header>
+
+        <main className="grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
+          <section className="overflow-hidden rounded-[2.6rem] border border-black/[0.06] bg-[#f8f5ef] shadow-[0_30px_100px_rgba(58,46,33,.08)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/[0.06] px-5 py-4 md:px-7">
+              <div>
+                <p className="text-[10px] uppercase tracking-[.22em] text-[#8a8074]">Generation {String(generation).padStart(2, "0")} · parent</p>
+                <h1 className="mt-1 font-serif text-3xl md:text-4xl">One shoe. Billions of directions.</h1>
+              </div>
+              <div className="flex rounded-full bg-black/[0.045] p-1">
+                <button onClick={() => setView("atelier")} className={"rounded-full px-4 py-2 text-xs transition " + (view === "atelier" ? "bg-white shadow-sm" : "text-[#7c7369]")}>Atelier</button>
+                <button onClick={() => setView("pixel")} className={"rounded-full px-4 py-2 text-xs transition " + (view === "pixel" ? "bg-white shadow-sm" : "text-[#7c7369]")}>Game asset</button>
+              </div>
+            </div>
+
+            {view === "atelier" ? (
+              <div className="relative min-h-[520px] overflow-hidden" style={{ background: "linear-gradient(145deg, " + palette.sole + ", #f5f0e7 55%, " + palette.primary + " 88%)" }}>
+                <div className="absolute left-6 top-6 z-10 rounded-full border border-black/[0.06] bg-white/60 px-3 py-2 text-[10px] uppercase tracking-[.2em] backdrop-blur">visual twin · live</div>
+                <SneakerVisual sneaker={parent} className="h-[520px] w-full md:h-[620px]" />
+                <div className="absolute bottom-5 left-5 right-5 z-10 flex flex-wrap items-end justify-between gap-3">
+                  <div className="rounded-[1.5rem] border border-white/60 bg-white/70 p-4 shadow-xl backdrop-blur-xl">
+                    <p className="text-[10px] uppercase tracking-[.2em] text-[#83796e]">Current DNA</p>
+                    <p className="mt-1 text-lg font-medium capitalize">{parent.upper} upper · {parent.sole} sole · {parent.heel} heel</p>
+                  </div>
+                  <div className="rounded-[1.5rem] bg-[#171512] px-5 py-4 text-white shadow-xl">
+                    <p className="text-[10px] uppercase tracking-[.18em] text-white/55">Concept price</p>
+                    <p className="mt-1 text-2xl font-medium">€{price}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid min-h-[520px] place-items-center bg-[#161513] p-8 text-white md:min-h-[620px]">
+                <div className="w-full max-w-3xl text-center">
+                  <p className="text-[10px] uppercase tracking-[.28em] text-white/45">same DNA · game twin</p>
+                  <div className="mx-auto mt-8 grid min-h-[270px] place-items-center rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,#22201d,#11100f)] shadow-2xl">
+                    <PixelSneaker sneaker={parent} className="h-40 w-80 md:h-56 md:w-[28rem]" />
+                  </div>
+                  <h2 className="mt-7 font-serif text-4xl">Your sneaker just became loot.</h2>
+                  <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-white/55">
+                    Transparent pixel sprite generated from the exact atelier state. Use it as equipment, inventory art, collectible metadata, a shop item, or a world prop.
+                  </p>
+                  <div className="mt-6 flex flex-wrap justify-center gap-3">
+                    <button onClick={() => exportPixelSneaker(parent, 1)} className="rounded-full bg-white px-5 py-3 text-sm font-medium text-black">Export 64×32 PNG</button>
+                    <button onClick={() => exportPixelSneaker(parent, 4)} className="rounded-full border border-white/20 px-5 py-3 text-sm text-white hover:bg-white/10">Export 256×128 PNG</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-black/[0.06] p-5 md:p-7">
+              <div className="mb-4 flex flex-wrap gap-2">
+                {DIRECTIONS.map((item) => (
+                  <Pill key={item.id} active={direction === item.id} onClick={() => { setDirection(item.id); setGeneration((g) => g + 1); }}>
+                    {item.label}
+                  </Pill>
+                ))}
+              </div>
+              <div className="flex gap-2 rounded-[1.4rem] border border-black/[0.08] bg-white/70 p-2">
+                <input
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && applyPrompt()}
+                  placeholder={'Try “Tokyo future, wearable, less bulky”…'}
+                  className="min-w-0 flex-1 bg-transparent px-3 text-sm outline-none placeholder:text-[#a09991]"
+                />
+                <button onClick={applyPrompt} className="rounded-[1rem] bg-[#171512] px-4 py-2.5 text-sm text-white">Interpret →</button>
+              </div>
+            </div>
+          </section>
+
+          <aside className="space-y-5">
+            <section className="rounded-[2rem] border border-black/[0.06] bg-white/60 p-5 shadow-[0_20px_70px_rgba(58,46,33,.06)]">
+              <div className="mb-5 flex items-center justify-between">
+                <div><p className="text-[10px] uppercase tracking-[.2em] text-[#8a8074]">Live controls</p><h2 className="mt-1 text-xl font-medium">Shape pressure</h2></div>
+                <Icon>⌁</Icon>
+              </div>
+              <div className="space-y-5">
+                {[
+                  ["soleBoldness", "Sole boldness"],
+                  ["upperComplexity", "Upper complexity"],
+                  ["asymmetry", "Asymmetry"],
+                ].map(([key, label]) => (
+                  <label key={key} className="block">
+                    <div className="mb-2 flex items-center justify-between text-xs"><span className="text-[#746b61]">{label}</span><b>{parent[key]}</b></div>
+                    <input type="range" min="0" max="100" value={parent[key]} onChange={(e) => updateNumber(key, e.target.value)} className="atelier-range w-full" />
+                  </label>
+                ))}
+              </div>
+              <div className="mt-6 grid gap-1 rounded-2xl bg-black/[0.035] px-4 py-2">
+                <Trait label="Upper" value={parent.upper} />
+                <Trait label="Sole" value={parent.sole} />
+                <Trait label="Heel" value={parent.heel} />
+                <Trait label="Lacing" value={parent.lacing} />
+                <Trait label="Material" value={parent.material} />
+                <Trait label="Colour" value={palette.name} />
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-black/[0.06] bg-[#1b1a18] p-5 text-white shadow-[0_20px_70px_rgba(30,25,20,.13)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div><p className="text-[10px] uppercase tracking-[.2em] text-white/40">Taste memory</p><h2 className="mt-1 text-xl font-medium">The atelier is learning you.</h2></div>
+                <span className="text-xs text-white/40">{taste.confidence}%</span>
+              </div>
+              <p className="min-h-[44px] text-sm leading-relaxed text-white/60">{taste.signal}</p>
+              <div className="mt-5 space-y-3">
+                <Metric label="Novelty" value={score.novelty} />
+                <Metric label="Wearability" value={score.wearability} />
+                <Metric label="Production proxy" value={score.production} />
+              </div>
+              <p className="mt-5 text-[10px] leading-relaxed text-white/35">
+                Taste memory is session-local for now. Production score is a design heuristic, not manufacturing validation.
+              </p>
+            </section>
+
+            <section className="rounded-[2rem] border border-black/[0.06] bg-[#e8dfd3] p-5">
+              <p className="text-[10px] uppercase tracking-[.2em] text-[#806f5f]">Engine architecture</p>
+              <div className="mt-3 space-y-2 text-sm">
+                <div className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-[#4f7657]" /> bounded design vocabulary</div>
+                <div className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-[#4f7657]" /> instant local mutations</div>
+                <div className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-[#8f7359]" /> Jev server adapter seam</div>
+                <div className="flex items-center gap-3"><span className="h-2 w-2 rounded-full bg-[#4f7657]" /> vector + pixel outputs</div>
+              </div>
+            </section>
+          </aside>
         </main>
-        <div className="mt-5"><Marketplace selectedDesign={selectedDesign} onSelect={selectDesign} /></div>
-        <div className="mt-5"><BusinessModel brandMode={brandMode} onSwitch={setBrandMode} /></div>
-        <section className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-4">
-          {[
-            ["Tests", allTestsPassed ? "All product logic checks passed." : "Some product logic checks failed."],
-            ["Creator storefronts", "Every creator gets a branded drop page, launch tools, and earnings dashboard."],
-            ["No inventory risk", "Pairs are ordered first, then produced. Fewer dead-stock goblins."],
-            ["Taste graph", "The platform learns which silhouettes, colours, prices, and creators convert."],
-          ].map(([title, text]) => (
-            <Card key={title} className="rounded-[1.5rem] bg-white/65 p-5">
-              <div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">{title}</h3><Icon name={title === "Tests" ? "check" : "chevron"} /></div>
-              <p className="text-sm text-[#6f665d]">{text}</p>
-            </Card>
-          ))}
+
+        <section className="mt-5 rounded-[2.6rem] border border-black/[0.06] bg-[#e9e3d9] p-5 md:p-7">
+          <div className="mb-5 flex flex-col justify-between gap-3 md:flex-row md:items-end">
+            <div>
+              <p className="text-[10px] uppercase tracking-[.22em] text-[#82776b]">Live evolution · {DIRECTIONS.find((d) => d.id === direction)?.hint}</p>
+              <h2 className="mt-1 font-serif text-4xl">Choose what survives.</h2>
+              <p className="mt-2 max-w-2xl text-sm text-[#70675d]">Four coherent descendants. Pick one and it becomes the parent instantly. Your repeated choices form the taste signal for later Jev decisions.</p>
+            </div>
+            <button onClick={() => setGeneration((g) => g + 1)} className="self-start rounded-full border border-black/10 bg-white/65 px-4 py-2.5 text-sm hover:bg-white md:self-auto">↻ New descendants</button>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {descendants.map((sneaker, index) => <Candidate key={sneaker.seed + "-" + index} sneaker={sneaker} index={index} onChoose={choose} />)}
+          </div>
         </section>
+
+        <footer className="mt-6 flex flex-col justify-between gap-3 px-2 text-xs text-[#8d8377] md:flex-row">
+          <span>ATELIER ENGINE · visual twin → game twin → future production twin</span>
+          <span>{history.length} choices remembered this session</span>
+        </footer>
       </div>
     </div>
   );

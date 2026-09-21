@@ -1,133 +1,101 @@
 # Atelier Engine
 
-**The creator commerce platform for sneaker brands.**
+**Design at the speed of thought.**
 
-[🚀 Open the live demo](https://mikelninh.github.io/atelier-engine/) · [💻 View source](https://github.com/mikelninh/atelier-engine) · [🛠 Run locally](#local-development)
+Atelier Engine is an experimental live sneaker design system: evolve one shoe through coherent mutations, teach the atelier your taste by choosing descendants, and turn the exact same sneaker DNA into a game-ready pixel asset.
 
-Design it live. Launch it as a sneaker brand. From first sketch to global sales —
-creators build micro-brands; the platform handles made-to-order production,
-fulfilment, and growth.
+## The loop
 
-This repo contains the early concept dashboard: a single-page React app that
-walks through the live design preview, the demand-and-commission economics,
-the marketplace pulse, and the two-path business model.
+**Parent sneaker → 4 descendants → choose what survives → repeat**
 
-> **Current status:** interactive product concept. The design studio and business-model simulation run in the browser; manufacturing, payments, creator onboarding and marketplace persistence are still roadmap work.
+The current vertical slice supports:
 
----
+- live parametric sneaker silhouettes rendered as SVG
+- bounded design DNA for sole, upper, toe, heel, lacing, material and colour
+- instant directional mutations: sleeker, wearable, stranger, technical, luxurious or surprise
+- natural-language direction interpretation in the browser
+- lightweight session taste memory from repeated choices
+- novelty, wearability and production-proxy signals
+- a synced **64×32 transparent pixel sneaker**
+- one-click export as **64×32** or nearest-neighbour **256×128 PNG**
+- a typed decision context ready to hand to a server-side Jev adapter
 
-## What's in here
+## One sneaker, three twins
 
-- A working concept of the **creator design studio** — pick a model, palette,
-  material, and AI style mode; see live updates of price, style match, demand
-  score, projected monthly orders, and creator commission.
-- A **marketplace pulse** showing the four most popular creator designs
-  ranked by orders, with one-click switching into the live preview.
-- A **business-model toggle** between *Build our own brand* (full control,
-  higher margin) and *Creator micro-brands* (scale across many creators).
-- **Inline tests** on the pricing, commission, demand, and lookup logic — runs
-  on import; pass/fail surfaced in the dashboard's Tests tile.
-- Hara-inspired **calm aesthetic** — warm paper background, single sage accent,
-  no decorative noise.
+### 1. Visual twin — now
 
----
+The browser renders the sneaker from structured design DNA. It is intentionally immediate and bounded: every state maps to a supported visual operation.
 
-## Two paths, one platform
+### 2. Game twin — now
 
-| Mode | Who runs it | Margin model | Best when |
-|---|---|---|---|
-| **Own brand** | We do | Gross margin (~38%) | Long-term brand equity, recognisable design language |
-| **Creator micro-brands** | Creators | Creator commission (~25%) | Scale, niche discovery, fast demand validation |
+The same state is rasterised into a tiny transparent pixel sprite. That means the thing designed in the atelier can immediately become:
 
-The toggle in the dashboard re-prices the commission live, so you can model
-both strategies against the same design.
+- equipment
+- inventory art
+- collectible metadata
+- shop merchandise
+- world props
+- loot or rewards inside our own games
 
----
+The pixel asset is procedural and deterministic rather than an unrelated AI redraw.
 
-## Made-to-order, by design
+### 3. Production twin — later
 
-No inventory. No warehouse goblins. Pairs are ordered first, then produced.
-Every creator gets a branded drop page, launch tools, and an earnings
-dashboard. The platform learns which silhouettes, colours, prices, and
-creators convert — that taste graph is the long-term moat.
+The current production score is only a heuristic. A future manufacturing layer should translate supported designs into validated CAD / tech-pack / BOM states and let real manufacturing constraints participate in the decision loop.
 
----
+## Where Jev fits
+
+Jev is not the mesh or image generator. It is the fast bounded **decision layer**.
+
+The repo exposes `buildJevDecisionContext()` in `src/sneakerEngine.js`. The intended server-side flow is:
+
+1. send current sneaker DNA + direction + learned taste
+2. constrain decisions to `OPTION_SETS`
+3. let Jev choose a coherent supported mutation
+4. validate the returned state
+5. render it instantly with the existing visual + pixel engines
+
+The browser currently uses a deterministic local mutation engine so the public GitHub Pages demo remains instant and does not expose API secrets.
+
+## Files
+
+```
+src/
+├── App.jsx               # live evolution experience
+├── SneakerVisual.jsx     # vector sneaker + pixel renderer/export
+├── sneakerEngine.js      # design vocabulary, mutations, scores, Jev seam
+├── index.css             # atelier + sneaker rendering styles
+└── main.jsx
+```
 
 ## Local development
 
-Standard Vite + React + Tailwind:
-
 ```bash
 npm install
-npm run dev          # http://localhost:5173
+npm run dev
 ```
+
+Production build:
 
 ```bash
-npm run build        # static bundle in dist/
-npm run preview      # preview the build at :5174
+npm run build
 ```
 
----
+## Current product boundary
 
-## Project structure
+This is a **playable design vertical slice**, not a claim that every visual state can already be manufactured. The point of this version is to test whether rapid evolution feels magical and whether a user's repeated selections produce a useful taste signal.
 
-```
-atelier-engine/
-├── src/
-│   ├── App.jsx        # single-page concept dashboard (the whole product, today)
-│   ├── main.jsx       # React entry
-│   └── index.css      # Tailwind directives + base typography
-├── public/
-│   └── sneakers/      # drop real product photography here when ready
-├── index.html         # HTML shell + Google Fonts (Cormorant + Inter Tight)
-├── tailwind.config.js
-├── postcss.config.js
-└── vite.config.js
-```
+Next serious layers:
+
+- server-side Jev adapter
+- richer parametric geometry / WebGL or 3D modular parts
+- multi-angle pixel sprite sheets
+- persistent personal taste graph
+- save/share sneaker genome URLs
+- production constraints and supplier-backed modules
+- game inventory API / export manifest
+- physical made-to-order workflow
 
 ---
 
-## Roadmap (as of v0.1)
-
-- [ ] Replace `placehold.co` placeholders with real product photography in `/public/sneakers/`
-- [ ] Wire the marketplace to a real database (Supabase or Postgres)
-- [ ] Stripe Connect for creator commission payouts
-- [ ] Production partner integration for made-to-order fulfilment
-- [ ] Creator-side onboarding flow + verified-creator badge
-- [ ] German-language landing page
-- [ ] Open ambassador + athlete programs (mirror the [CreaPlus pattern](https://github.com/mikelninh/creaplus))
-
----
-
-## Design principles
-
-The platform follows the same posture as the rest of the
-[mikelninh sister projects](https://github.com/mikelninh) — Kenya Hara,
-MUJI, *material honesty*. Refuse decoration, trust what remains. No fake
-social proof, no manufactured urgency, no countdown timers.
-
-If a feature does not pass the *"would it sit naturally in a Muji store?"*
-test, it does not ship.
-
----
-
-## Tech stack
-
-| Layer | Stack |
-|---|---|
-| Frontend | React 18 + Vite |
-| Styling | Tailwind CSS 3 (warm paper palette, sage accent) |
-| Fonts | Cormorant Garamond (display) · Inter Tight (body) |
-| Hosting | GitHub Pages |
-| License | MIT |
-
----
-
-## License
-
-MIT — do what you want, but the rest of the brand and the production network
-are not licensed under MIT (those are the moat). See [LICENSE](LICENSE).
-
----
-
-*Part of the [mikelninh](https://github.com/mikelninh) maker ecosystem.*
+*Atelier Engine — visual twin → game twin → future production twin.*
