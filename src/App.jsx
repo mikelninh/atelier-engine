@@ -1,6 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import CollectibleCard from "./CollectibleCard.jsx";
-import { PixelSneaker, SneakerVisual, exportPixelSneaker } from "./SneakerVisual.jsx";
+import {
+  PixelSneaker,
+  SneakerVisual,
+  createShareCardFile,
+  exportPixelSneaker,
+  exportShareCard,
+} from "./SneakerVisual.jsx";
 import {
   DIRECTIONS,
   OPTION_SETS,
@@ -8,6 +14,7 @@ import {
   WORLDS,
   buildTasteProfile,
   createInitialSneaker,
+  createWorldSneaker,
   estimatePrice,
   generateDescendants,
   getFlavorText,
@@ -22,6 +29,26 @@ import {
 } from "./sneakerEngine.js";
 
 const COLLECTION_KEY = "riftsole.collection.v1";
+const FIRST_RUN_KEY = "riftsole.first-run.v1";
+
+const INSTINCTS = [
+  { id: "sleeker", icon: "↗", title: "FAST", copy: "Light, sharp, inevitable." },
+  { id: "luxury", icon: "✦", title: "ICONIC", copy: "Quiet enough to become a signature." },
+  { id: "technical", icon: "⌁", title: "FUTURE", copy: "Engineered like it arrived early." },
+  { id: "stranger", icon: "◇", title: "ALIEN", copy: "Make people ask what they are looking at." },
+];
+
+function getUrlState() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      hasDna: Boolean(params.get("dna")),
+      view: params.get("view"),
+    };
+  } catch {
+    return { hasDna: false, view: null };
+  }
+}
 
 function decodeSharedSneaker() {
   try {
@@ -41,12 +68,36 @@ function encodeSneaker(sneaker) {
   return btoa(JSON.stringify(sneaker)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
+function buildShareUrl(sneaker) {
+  const url = new URL(window.location.href);
+  url.search = "";
+  url.searchParams.set("dna", encodeSneaker(sneaker));
+  url.searchParams.set("view", "card");
+  return url;
+}
+
 function loadCollection() {
   try {
     const value = JSON.parse(localStorage.getItem(COLLECTION_KEY) || "[]");
     return Array.isArray(value) ? value : [];
   } catch {
     return [];
+  }
+}
+
+function hasSeenFirstRun() {
+  try {
+    return localStorage.getItem(FIRST_RUN_KEY) === "1";
+  } catch {
+    return true;
+  }
+}
+
+function markFirstRunSeen() {
+  try {
+    localStorage.setItem(FIRST_RUN_KEY, "1");
+  } catch {
+    // The experience still works when storage is unavailable.
   }
 }
 
@@ -101,15 +152,161 @@ function CollectionItem({ item, onLoad, onRemove }) {
   );
 }
 
+function FirstRunExperience({ step, worldId, instinct, onWorld, onInstinct, onNext, onForge, onSkip }) {
+  const selectedWorld = WORLDS[worldId] || WORLDS.sky;
+  const selectedInstinct = INSTINCTS.find((item) => item.id === instinct) || INSTINCTS[2];
+
+  return (
+    <div className="rift-first-run">
+      <div className="rift-first-run-noise" />
+      <button className="rift-first-skip" onClick={onSkip}>Skip to generator</button>
+
+      <div className="rift-first-brand">
+        <span className="rift-first-mark">⌃</span>
+        <b>RIFTSOLE</b>
+        <small>YOUR FIRST STEP STARTS HERE</small>
+      </div>
+
+      <div className="rift-first-progress">
+        {[0, 1, 2].map((item) => <i key={item} className={step >= item ? "active" : ""} />)}
+      </div>
+
+      {step === 0 && (
+        <section className="rift-first-panel rift-first-world-step">
+          <span className="rift-first-kicker">01 / CHOOSE A WORLD</span>
+          <h1>Where would<br />you run?</h1>
+          <p>Don't overthink it. Pick the world that pulls first.</p>
+
+          <div className="rift-first-worlds">
+            {Object.values(WORLDS).map((world) => (
+              <button
+                key={world.id}
+                onClick={() => onWorld(world.id)}
+                className={"rift-first-world " + (worldId === world.id ? "active" : "")}
+                style={{ "--item": world.css.glow, "--item2": world.css.glow2 }}
+              >
+                <span className="rift-first-world-orb">{world.icon}</span>
+                <b>{world.name}</b>
+                <small>{world.tagline}</small>
+                <em>{world.description}</em>
+              </button>
+            ))}
+          </div>
+
+          <button className="rift-first-next" onClick={onNext}>THIS WORLD →</button>
+        </section>
+      )}
+
+      {step === 1 && (
+        <section className="rift-first-panel">
+          <span className="rift-first-kicker">02 / TRUST YOUR INSTINCT</span>
+          <h1>What should<br />it feel like?</h1>
+          <p>Your answer becomes the first mutation pressure on the design.</p>
+
+          <div className="rift-instincts">
+            {INSTINCTS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => onInstinct(item.id)}
+                className={"rift-instinct " + (instinct === item.id ? "active" : "")}
+              >
+                <span>{item.icon}</span>
+                <b>{item.title}</b>
+                <small>{item.copy}</small>
+              </button>
+            ))}
+          </div>
+
+          <button className="rift-first-next" onClick={onNext}>LOCK IT IN →</button>
+        </section>
+      )}
+
+      {step === 2 && (
+        <section className="rift-first-panel rift-forge-step">
+          <span className="rift-first-kicker">03 / THE FORGE</span>
+          <h1>One world.<br />One instinct.</h1>
+          <p>Now the generator turns those choices into a sneaker genome that belongs to nobody else.</p>
+
+          <div
+            className="rift-forge-orb"
+            style={{ "--item": selectedWorld.css.glow, "--item2": selectedWorld.css.glow2 }}
+          >
+            <div className="rift-forge-ring ring-one" />
+            <div className="rift-forge-ring ring-two" />
+            <PixelSneaker sneaker={createWorldSneaker(worldId, 777)} className="rift-forge-silhouette" />
+          </div>
+
+          <div className="rift-forge-summary">
+            <span><small>WORLD</small><b>{selectedWorld.name}</b></span>
+            <i>×</i>
+            <span><small>INSTINCT</small><b>{selectedInstinct.title}</b></span>
+          </div>
+
+          <button className="rift-first-forge" onClick={onForge}>
+            <span>✦</span>
+            <b>REVEAL MY RIFTSOLE</b>
+            <small>forge the first genome</small>
+          </button>
+        </section>
+      )}
+    </div>
+  );
+}
+
+function RevealModal({ sneaker, onClose, onCollect, onShare, onDownload, onCopyPost, onEvolve }) {
+  if (!sneaker) return null;
+  const rarity = getRarity(sneaker);
+  const name = getSneakerName(sneaker);
+
+  return (
+    <div className="rift-reveal-backdrop" role="dialog" aria-modal="true" aria-label="RIFTSOLE reveal">
+      <div className="rift-reveal-flash" />
+      <button className="rift-reveal-close" onClick={onClose}>×</button>
+
+      <div className="rift-reveal-copy">
+        <span>YOUR RIFTSOLE HAS ARRIVED</span>
+        <div className="rift-reveal-rarity" style={{ "--reveal": rarity.color }}>
+          <i>{rarity.gem}</i>
+          <b>{rarity.label}</b>
+          <i>{rarity.gem}</i>
+        </div>
+        <h2>{name}</h2>
+        <p>Keep it, share it, or evolve it. The genome is yours to remix.</p>
+
+        <div className="rift-reveal-actions">
+          <button className="rift-button gold" onClick={onCollect}>◇ KEEP IT</button>
+          <button className="rift-button" onClick={onShare}>↗ SHARE</button>
+          <button className="rift-button" onClick={onDownload}>↓ POSTER</button>
+          <button className="rift-button ghost" onClick={onCopyPost}>COPY POST</button>
+        </div>
+
+        <button className="rift-reveal-evolve" onClick={onEvolve}>Not quite. Evolve this pair →</button>
+      </div>
+
+      <div className="rift-reveal-card-wrap">
+        <CollectibleCard sneaker={sneaker} />
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
-  const [sneaker, setSneaker] = useState(() => decodeSharedSneaker() || createInitialSneaker());
+  const sharedSneaker = useMemo(() => decodeSharedSneaker(), []);
+  const urlState = useMemo(() => getUrlState(), []);
+  const [sneaker, setSneaker] = useState(() => sharedSneaker || createInitialSneaker());
   const [generation, setGeneration] = useState(1);
   const [direction, setDirection] = useState("wild");
   const [panel, setPanel] = useState("style");
-  const [view, setView] = useState("studio");
+  const [view, setView] = useState(() => urlState.view === "card" || urlState.hasDna ? "card" : "studio");
   const [history, setHistory] = useState([]);
   const [collection, setCollection] = useState(loadCollection);
   const [notice, setNotice] = useState("");
+  const [sharedLanding, setSharedLanding] = useState(urlState.hasDna);
+  const [firstRunOpen, setFirstRunOpen] = useState(() => !urlState.hasDna && !hasSeenFirstRun());
+  const [firstRunStep, setFirstRunStep] = useState(0);
+  const [firstWorld, setFirstWorld] = useState("sky");
+  const [firstInstinct, setFirstInstinct] = useState("technical");
+  const [revealSneaker, setRevealSneaker] = useState(null);
 
   const world = WORLDS[sneaker.world] || WORLDS.sky;
   const rarity = useMemo(() => getRarity(sneaker), [sneaker]);
@@ -123,6 +320,14 @@ export default function App() {
   );
   const price = useMemo(() => estimatePrice(sneaker), [sneaker]);
 
+  const shareMeta = useMemo(() => ({
+    name,
+    rarity,
+    stats,
+    flavor,
+    world: world.name,
+  }), [name, rarity, stats, flavor, world.name]);
+
   useEffect(() => {
     localStorage.setItem(COLLECTION_KEY, JSON.stringify(collection.slice(0, 40)));
   }, [collection]);
@@ -133,9 +338,24 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const remember = (next) => {
+  const detachSharedUrl = () => {
+    if (!sharedLanding) return;
+    const url = new URL(window.location.href);
+    url.search = "";
+    window.history.replaceState({}, "", url);
+    setSharedLanding(false);
+  };
+
+  const remember = (next, options = {}) => {
+    if (!options.keepSharedUrl) detachSharedUrl();
     setHistory((items) => [...items, next].slice(-20));
     setSneaker(next);
+    setGeneration((value) => value + 1);
+  };
+
+  const startReveal = (next) => {
+    setSneaker(next);
+    setRevealSneaker(next);
     setGeneration((value) => value + 1);
   };
 
@@ -148,6 +368,7 @@ export default function App() {
   };
 
   const patchNumber = (key, value) => {
+    detachSharedUrl();
     setSneaker((current) => ({
       ...current,
       [key]: Number(value),
@@ -161,8 +382,10 @@ export default function App() {
   };
 
   const generate = () => {
-    remember(randomizeSneaker(sneaker, Date.now()));
-    setNotice("New RIFTSOLE generated");
+    detachSharedUrl();
+    const next = randomizeSneaker(sneaker, Date.now());
+    setHistory((items) => [...items, next].slice(-20));
+    startReveal(next);
   };
 
   const mutate = (mode) => {
@@ -170,14 +393,15 @@ export default function App() {
     remember(mutateSneaker(sneaker, mode, generation % 4, generation + 1));
   };
 
-  const collect = () => {
-    const id = sneakerFingerprint(sneaker);
+  const collectSneaker = (target = sneaker) => {
+    const id = sneakerFingerprint(target);
+    const targetRarity = getRarity(target);
     if (collection.some((item) => sneakerFingerprint(item) === id)) {
       setNotice("Already in your vault");
       return;
     }
-    setCollection((items) => [{ ...sneaker, collectedAt: Date.now() }, ...items].slice(0, 40));
-    setNotice(rarity.label + " collected");
+    setCollection((items) => [{ ...target, collectedAt: Date.now() }, ...items].slice(0, 40));
+    setNotice(targetRarity.label + " collected");
   };
 
   const removeCollected = (item) => {
@@ -192,27 +416,103 @@ export default function App() {
     setNotice("Loaded " + getSneakerName(item));
   };
 
-  const share = async () => {
-    const code = encodeSneaker(sneaker);
-    const url = new URL(window.location.href);
-    url.searchParams.set("dna", code);
-    window.history.replaceState({}, "", url);
-    const data = {
-      title: "RIFTSOLE — " + name,
-      text: rarity.label + " " + name + " · " + flavor,
-      url: url.toString(),
+  const nativeShare = async (target = sneaker) => {
+    const targetName = getSneakerName(target);
+    const targetRarity = getRarity(target);
+    const targetFlavor = getFlavorText(target);
+    const targetStats = getGameStats(target);
+    const targetWorld = WORLDS[target.world] || WORLDS.sky;
+    const url = buildShareUrl(target);
+    const meta = {
+      name: targetName,
+      rarity: targetRarity,
+      stats: targetStats,
+      flavor: targetFlavor,
+      world: targetWorld.name,
     };
+
     try {
-      if (navigator.share) {
+      const file = await createShareCardFile(target, meta);
+      const data = {
+        title: "RIFTSOLE — " + targetName,
+        text: targetRarity.label + " " + targetName + " · " + targetFlavor,
+        url: url.toString(),
+        files: [file],
+      };
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
         await navigator.share(data);
-        setNotice("Shared");
-      } else {
-        await navigator.clipboard.writeText(url.toString());
-        setNotice("Share link copied");
+        setNotice("Shared with poster");
+        return;
       }
-    } catch {
-      // Native share cancellation is not an error the user needs to see.
+
+      if (navigator.share) {
+        await navigator.share({ title: data.title, text: data.text, url: data.url });
+        setNotice("Shared");
+        return;
+      }
+
+      await navigator.clipboard.writeText(url.toString());
+      setNotice("Remix link copied");
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        try {
+          await navigator.clipboard.writeText(url.toString());
+          setNotice("Remix link copied");
+        } catch {
+          setNotice("Share card ready to download");
+        }
+      }
     }
+  };
+
+  const copyPost = async (target = sneaker) => {
+    const targetName = getSneakerName(target);
+    const targetRarity = getRarity(target);
+    const targetStats = getGameStats(target);
+    const targetWorld = WORLDS[target.world] || WORLDS.sky;
+    const url = buildShareUrl(target);
+    const copy = [
+      "I found a " + targetRarity.label.toLowerCase() + " " + targetName + " in RIFTSOLE.",
+      "",
+      targetWorld.name + " · Speed " + targetStats.speed + " · Style " + targetStats.style + " · Grip " + targetStats.grip,
+      "",
+      "remix this exact pair ↓",
+      url.toString(),
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(copy);
+      setNotice("Post copied");
+    } catch {
+      setNotice("Copy unavailable");
+    }
+  };
+
+  const remixShared = () => {
+    const next = mutateSneaker(sneaker, "wild", 3, generation + 1);
+    detachSharedUrl();
+    setDirection("wild");
+    setSneaker(next);
+    setGeneration((value) => value + 1);
+    setView("studio");
+    setNotice("Remix started");
+  };
+
+  const forgeFirstSneaker = () => {
+    let next = createWorldSneaker(firstWorld, hash(Date.now() + ":" + firstWorld));
+    next = randomizeSneaker(next, Date.now() + 1);
+    next = mutateSneaker(next, firstInstinct, 2, 1);
+    markFirstRunSeen();
+    setFirstRunOpen(false);
+    setHistory([next]);
+    setDirection(firstInstinct);
+    startReveal(next);
+  };
+
+  const skipFirstRun = () => {
+    markFirstRunSeen();
+    setFirstRunOpen(false);
   };
 
   const paletteChoices = world.palettes.map((key) => [key, PALETTES[key]]);
@@ -258,8 +558,8 @@ export default function App() {
         </nav>
 
         <div className="rift-header-actions">
-          <button className="rift-button ghost" onClick={share}>Share</button>
-          <button className="rift-button gold" onClick={collect}>Collect</button>
+          <button className="rift-button ghost" onClick={() => nativeShare()}>Share</button>
+          <button className="rift-button gold" onClick={() => collectSneaker()}>Collect</button>
         </div>
       </header>
 
@@ -341,8 +641,8 @@ export default function App() {
                   <strong>GENERATE</strong>
                   <small>bring a new step into existence</small>
                 </button>
-                <button className="rift-button collect-button" onClick={collect}>◇ COLLECT</button>
-                <button className="rift-button share-button" onClick={share}>↗ SHARE</button>
+                <button className="rift-button collect-button" onClick={() => collectSneaker()}>◇ COLLECT</button>
+                <button className="rift-button share-button" onClick={() => nativeShare()}>↗ SHARE</button>
               </div>
             </div>
 
@@ -436,20 +736,35 @@ export default function App() {
             <div><span>⚡</span><b>GENERATE</b><small>endless combinations</small></div>
             <div><span>♦</span><b>COLLECT</b><small>keep the ones that matter</small></div>
             <div><span>⌘</span><b>SHARE</b><small>same DNA, same sneaker</small></div>
-            <div><span>◎</span><b>PLAY</b><small>pixel twin ready for games</small></div>
+            <div><span>◎</span><b>REMIX</b><small>every share can become a new branch</small></div>
           </section>
         </main>
       )}
 
       {view === "card" && (
-        <main className="rift-card-page">
+        <main className={"rift-card-page " + (sharedLanding ? "rift-card-shared" : "")}>
           <div className="rift-card-page-copy">
-            <span className="rift-eyebrow">YOUR COLLECTIBLE REVEAL</span>
+            <span className="rift-eyebrow">{sharedLanding ? "SOMEONE FOUND THIS PAIR" : "YOUR COLLECTIBLE REVEAL"}</span>
             <h1>{name}</h1>
-            <p>The card is generated from the same sneaker genome. Change the shoe, and its collectible identity changes with it.</p>
+            <p>
+              {sharedLanding
+                ? "This exact sneaker genome was shared with you. Keep the lineage going by remixing it into something new."
+                : "The card is generated from the same sneaker genome. Change the shoe, and its collectible identity changes with it."}
+            </p>
+            <div className="rift-share-proof">
+              <span style={{ color: rarity.color }}>{rarity.gem} {rarity.label}</span>
+              <span>{world.name}</span>
+              <span>DNA #{String(sneaker.seed).slice(-6).padStart(6, "0")}</span>
+            </div>
             <div className="rift-card-page-actions">
-              <button className="rift-button gold" onClick={collect}>Collect this card</button>
-              <button className="rift-button ghost" onClick={share}>Share genome</button>
+              {sharedLanding ? (
+                <button className="rift-button gold" onClick={remixShared}>REMIX THIS SNEAKER →</button>
+              ) : (
+                <button className="rift-button gold" onClick={() => collectSneaker()}>Collect this card</button>
+              )}
+              <button className="rift-button ghost" onClick={() => nativeShare()}>Share genome</button>
+              <button className="rift-button ghost" onClick={() => exportShareCard(sneaker, shareMeta)}>Download poster</button>
+              <button className="rift-button ghost" onClick={() => copyPost()}>Copy post</button>
               <button className="rift-button ghost" onClick={() => exportPixelSneaker(sneaker, 4)}>Export sprite</button>
             </div>
           </div>
@@ -484,8 +799,41 @@ export default function App() {
 
       <footer className="rift-footer">
         <span>RIFTSOLE · REAL STEPS. MORE WORLDS.</span>
-        <span>visual twin → collectible twin → game twin</span>
+        <span>generate → reveal → collect → share → remix</span>
       </footer>
+
+      {firstRunOpen && (
+        <FirstRunExperience
+          step={firstRunStep}
+          worldId={firstWorld}
+          instinct={firstInstinct}
+          onWorld={setFirstWorld}
+          onInstinct={setFirstInstinct}
+          onNext={() => setFirstRunStep((value) => Math.min(2, value + 1))}
+          onForge={forgeFirstSneaker}
+          onSkip={skipFirstRun}
+        />
+      )}
+
+      <RevealModal
+        sneaker={revealSneaker}
+        onClose={() => setRevealSneaker(null)}
+        onCollect={() => collectSneaker(revealSneaker)}
+        onShare={() => nativeShare(revealSneaker)}
+        onDownload={() => exportShareCard(revealSneaker, {
+          name: getSneakerName(revealSneaker),
+          rarity: getRarity(revealSneaker),
+          stats: getGameStats(revealSneaker),
+          flavor: getFlavorText(revealSneaker),
+          world: WORLDS[revealSneaker.world]?.name,
+        })}
+        onCopyPost={() => copyPost(revealSneaker)}
+        onEvolve={() => {
+          const next = mutateSneaker(revealSneaker, "wild", 3, generation + 1);
+          setRevealSneaker(null);
+          remember(next);
+        }}
+      />
     </div>
   );
 }
