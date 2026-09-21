@@ -1,13 +1,14 @@
 {
-  "name": "atelier-engine",
-  "version": "0.1.0",
+  "name": "riftsole-sneaker-generator",
+  "version": "0.2.0",
   "private": true,
-  "description": "Atelier Engine — the creator commerce platform for sneaker brands. Design live, launch as a sneaker brand.",
+  "description": "RIFTSOLE — a live collectible sneaker generator. Generate, evolve, collect and share reproducible sneaker DNA.",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview --port 5174"
+    "preview": "vite preview --port 5174",
+    "test": "node scripts/smoke.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
