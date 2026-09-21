@@ -1,101 +1,89 @@
-# Atelier Engine
+# RIFTSOLE
 
-**Design at the speed of thought.**
+**The collectible sneaker generator.**
 
-Atelier Engine is an experimental live sneaker design system: evolve one shoe through coherent mutations, teach the atelier your taste by choosing descendants, and turn the exact same sneaker DNA into a game-ready pixel asset.
+Choose a world. Generate a sneaker. Evolve its DNA. Reveal its rarity. Keep the ones that matter.
 
-## The loop
+RIFTSOLE is a playable product experiment built around one idea: a sneaker can be a single reproducible object across design, collectibles and games.
 
-**Parent sneaker → 4 descendants → choose what survives → repeat**
+## The live loop
 
-The current vertical slice supports:
+1. **Choose a realm** — Skyrealm, Emberland or Mossreach.
+2. **Generate** a sneaker from bounded design DNA.
+3. **Shape it** — upper, sole, heel, toe, lacing, material, palette and design pressure.
+4. **Evolve it** — choose descendants or mutate toward sleeker, wearable, stranger, technical, luxury or wild.
+5. **Reveal it** — deterministic name, rarity, flavour text and game stats.
+6. **Collect it** — save exact sneaker genomes in the local Vault.
+7. **Share it** — shared URLs reconstruct the exact same sneaker.
+8. **Play with it** — the same DNA renders a transparent pixel sneaker sprite.
 
-- live parametric sneaker silhouettes rendered as SVG
-- bounded design DNA for sole, upper, toe, heel, lacing, material and colour
-- instant directional mutations: sleeker, wearable, stranger, technical, luxurious or surprise
-- natural-language direction interpretation in the browser
-- lightweight session taste memory from repeated choices
-- novelty, wearability and production-proxy signals
-- a synced **64×32 transparent pixel sneaker**
-- one-click export as **64×32** or nearest-neighbour **256×128 PNG**
-- a typed decision context ready to hand to a server-side Jev adapter
+## Three twins, one genome
 
-## One sneaker, three twins
+- **Visual twin** — the live sneaker in the generator.
+- **Collectible twin** — the RIFTSOLE rarity card.
+- **Game twin** — the procedural pixel sprite.
 
-### 1. Visual twin — now
+The state is structured rather than prompt-only, so a sneaker can be reconstructed rather than merely approximated.
 
-The browser renders the sneaker from structured design DNA. It is intentionally immediate and bounded: every state maps to a supported visual operation.
+## Current product features
 
-### 2. Game twin — now
+- three world-specific design grammars and palettes
+- instant deterministic generation
+- live DNA controls
+- four descendant variants per generation
+- directional mutations
+- rarity system: Common → Rare → Epic → Legendary → Mythic
+- generated names and flavour text
+- Speed / Style / Grip stats
+- concept pricing
+- persistent browser Vault
+- shareable sneaker-genome URLs
+- transparent pixel sprite export
+- responsive RIFTSOLE UI
+- Jev-compatible bounded decision context for a future server-side decision layer
 
-The same state is rasterised into a tiny transparent pixel sprite. That means the thing designed in the atelier can immediately become:
-
-- equipment
-- inventory art
-- collectible metadata
-- shop merchandise
-- world props
-- loot or rewards inside our own games
-
-The pixel asset is procedural and deterministic rather than an unrelated AI redraw.
-
-### 3. Production twin — later
-
-The current production score is only a heuristic. A future manufacturing layer should translate supported designs into validated CAD / tech-pack / BOM states and let real manufacturing constraints participate in the decision loop.
-
-## Where Jev fits
-
-Jev is not the mesh or image generator. It is the fast bounded **decision layer**.
-
-The repo exposes `buildJevDecisionContext()` in `src/sneakerEngine.js`. The intended server-side flow is:
-
-1. send current sneaker DNA + direction + learned taste
-2. constrain decisions to `OPTION_SETS`
-3. let Jev choose a coherent supported mutation
-4. validate the returned state
-5. render it instantly with the existing visual + pixel engines
-
-The browser currently uses a deterministic local mutation engine so the public GitHub Pages demo remains instant and does not expose API secrets.
-
-## Files
-
-```
-src/
-├── App.jsx               # live evolution experience
-├── SneakerVisual.jsx     # vector sneaker + pixel renderer/export
-├── sneakerEngine.js      # design vocabulary, mutations, scores, Jev seam
-├── index.css             # atelier + sneaker rendering styles
-└── main.jsx
-```
-
-## Local development
+## Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Production build:
+Build:
 
 ```bash
 npm run build
 ```
 
-## Current product boundary
+## Project structure
 
-This is a **playable design vertical slice**, not a claim that every visual state can already be manufactured. The point of this version is to test whether rapid evolution feels magical and whether a user's repeated selections produce a useful taste signal.
+```
+src/
+├── App.jsx               # generator, vault and share flow
+├── CollectibleCard.jsx   # collectible card twin
+├── SneakerVisual.jsx     # vector sneaker + pixel renderer/export
+├── sneakerEngine.js      # worlds, genomes, mutations, rarity, stats
+├── index.css             # full RIFTSOLE visual system
+└── main.jsx
+```
 
-Next serious layers:
+## What this is not yet
 
-- server-side Jev adapter
-- richer parametric geometry / WebGL or 3D modular parts
+The current shoe is a visual/game design twin, **not manufacturing-ready CAD**. The production score is still a heuristic. A real production twin should later be constrained by validated lasts, sole units, material libraries, BOMs and supplier capabilities.
+
+## Next serious layers
+
+- richer modular 3D / WebGL geometry
 - multi-angle pixel sprite sheets
-- persistent personal taste graph
-- save/share sneaker genome URLs
-- production constraints and supplier-backed modules
-- game inventory API / export manifest
-- physical made-to-order workflow
+- account-backed persistent collections
+- public share pages with generated card images
+- community remix / lineage graph
+- challenges and limited realm drops
+- game inventory API
+- supplier-backed production modules
+- server-side Jev decision layer
+- physical sample workflow
 
 ---
 
-*Atelier Engine — visual twin → game twin → future production twin.*
+**RIFTSOLE — real steps, more worlds.**
