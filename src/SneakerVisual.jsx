@@ -182,6 +182,162 @@ export function PixelSneaker({ sneaker, className = "" }) {
   );
 }
 
+
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, radius);
+  if (fill) {
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+  }
+}
+
+function drawCentered(ctx, text, x, y, maxWidth) {
+  ctx.textAlign = "center";
+  if (maxWidth) {
+    ctx.fillText(text, x, y, maxWidth);
+  } else {
+    ctx.fillText(text, x, y);
+  }
+}
+
+export function buildShareCardCanvas(sneaker, meta = {}) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const ctx = canvas.getContext("2d");
+  const palette = PALETTES[sneaker.palette] || PALETTES.sky || Object.values(PALETTES)[0];
+  const name = meta.name || "RIFTSOLE";
+  const rarity = meta.rarity || { label: "RARE", color: palette.accent, gem: "◇" };
+  const stats = meta.stats || { speed: 80, style: 80, grip: 80 };
+  const flavor = meta.flavor || "Collect the step.";
+  const world = meta.world || sneaker.world || "rift";
+
+  const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  bg.addColorStop(0, "#07172f");
+  bg.addColorStop(.55, "#040b19");
+  bg.addColorStop(1, "#02050d");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const glow = ctx.createRadialGradient(540, 510, 20, 540, 510, 470);
+  glow.addColorStop(0, palette.secondary + "88");
+  glow.addColorStop(.48, palette.accent + "2f");
+  glow.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, canvas.width, 1040);
+
+  ctx.lineWidth = 8;
+  ctx.strokeStyle = "#dba73b";
+  roundRect(ctx, 28, 28, 1024, 1294, 34, null, "#dba73b");
+  ctx.lineWidth = 2;
+  roundRect(ctx, 48, 48, 984, 1254, 26, null, "#ffe08a");
+
+  ctx.fillStyle = "#ffe69a";
+  ctx.font = "700 66px Georgia, serif";
+  drawCentered(ctx, "RIFTSOLE", 540, 126);
+  ctx.fillStyle = "#729bd0";
+  ctx.font = "600 18px Arial, sans-serif";
+  ctx.letterSpacing = "5px";
+  drawCentered(ctx, "COLLECT THE STEP", 540, 166);
+
+  roundRect(ctx, 374, 198, 332, 64, 16, rarity.color + "2a", rarity.color);
+  ctx.fillStyle = rarity.color;
+  ctx.font = "700 28px Arial, sans-serif";
+  drawCentered(ctx, rarity.gem + "  " + rarity.label + "  " + rarity.gem, 540, 239);
+
+  ctx.fillStyle = "#7897be";
+  ctx.font = "600 18px Arial, sans-serif";
+  drawCentered(ctx, String(world).toUpperCase() + " // DNA #" + String(sneaker.seed).slice(-6).padStart(6, "0"), 540, 300);
+
+  const sprite = document.createElement("canvas");
+  sprite.width = 64;
+  sprite.height = 32;
+  const spriteCtx = sprite.getContext("2d");
+  spriteCtx.imageSmoothingEnabled = false;
+  drawPixelBase(spriteCtx, sneaker);
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.shadowColor = palette.accent;
+  ctx.shadowBlur = 36;
+  ctx.drawImage(sprite, 140, 355, 800, 400);
+  ctx.shadowBlur = 0;
+
+  const pedestal = ctx.createLinearGradient(140, 0, 940, 0);
+  pedestal.addColorStop(0, "rgba(219,167,59,0)");
+  pedestal.addColorStop(.25, "#dba73b");
+  pedestal.addColorStop(.75, "#dba73b");
+  pedestal.addColorStop(1, "rgba(219,167,59,0)");
+  ctx.fillStyle = pedestal;
+  ctx.fillRect(140, 775, 800, 4);
+
+  roundRect(ctx, 108, 810, 864, 122, 22, "#f4e3ad", "#dba73b");
+  ctx.fillStyle = "#07132a";
+  ctx.font = "700 58px Georgia, serif";
+  drawCentered(ctx, name, 540, 886, 800);
+
+  const statY = 968;
+  const statW = 256;
+  const statGap = 18;
+  const statX = (1080 - (statW * 3 + statGap * 2)) / 2;
+  const statData = [
+    ["SPEED", stats.speed, "#48b9ff"],
+    ["STYLE", stats.style, "#c174ff"],
+    ["GRIP", stats.grip, "#64df8c"],
+  ];
+  statData.forEach(([label, value, color], index) => {
+    const x = statX + index * (statW + statGap);
+    roundRect(ctx, x, statY, statW, 112, 18, "#071a36", color);
+    ctx.fillStyle = color;
+    ctx.font = "700 18px Arial, sans-serif";
+    drawCentered(ctx, label, x + statW / 2, statY + 35);
+    ctx.fillStyle = "#f8f5e8";
+    ctx.font = "700 42px Arial, sans-serif";
+    drawCentered(ctx, String(value), x + statW / 2, statY + 82);
+  });
+
+  roundRect(ctx, 108, 1110, 864, 92, 18, "#061127", "rgba(255,255,255,.14)");
+  ctx.fillStyle = "#efe5c8";
+  ctx.font = "500 28px Georgia, serif";
+  drawCentered(ctx, "“" + flavor + "”", 540, 1168, 800);
+
+  ctx.fillStyle = "#dba73b";
+  ctx.font = "700 18px Arial, sans-serif";
+  drawCentered(ctx, "GENERATE · EVOLVE · COLLECT · REMIX", 540, 1257);
+
+  ctx.fillStyle = "#4d678d";
+  ctx.font = "500 15px Arial, sans-serif";
+  drawCentered(ctx, "riftsole // real steps, more worlds", 540, 1292);
+
+  return canvas;
+}
+
+export function exportShareCard(sneaker, meta = {}) {
+  const canvas = buildShareCardCanvas(sneaker, meta);
+  const link = document.createElement("a");
+  link.download = "riftsole-" + String(meta.name || sneaker.seed).toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+export function createShareCardFile(sneaker, meta = {}) {
+  return new Promise((resolve, reject) => {
+    const canvas = buildShareCardCanvas(sneaker, meta);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error("Could not render share card"));
+        return;
+      }
+      resolve(new File([blob], "riftsole-" + sneaker.seed + ".png", { type: "image/png" }));
+    }, "image/png");
+  });
+}
+
 export function exportPixelSneaker(sneaker, scale = 1) {
   const base = document.createElement("canvas");
   base.width = 64;
