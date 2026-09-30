@@ -1,0 +1,78 @@
+{
+  "schema": "atelier.genome.seed.v1",
+  "name": "HANA Graphic Hero Jacket — GH-01",
+  "kind": "garment",
+  "seed": "hana-gh01",
+  "canon": {
+    "character": "Hana",
+    "direction": "Graphic Hero Piece",
+    "story_role": "hero garment",
+    "animal_free": true,
+    "rejected_text": ["Still Becoming"],
+    "note": "Direction lock, not a production-ready tech pack."
+  },
+  "locked": [
+    "silhouette",
+    "base_color",
+    "movement_color",
+    "emblem",
+    "slogan_policy"
+  ],
+  "traits": {
+    "silhouette": "ao-dai-dual-panel",
+    "base_color": "black",
+    "movement_color": "deep-crimson",
+    "emblem": "lotus-spider",
+    "slogan_policy": "none",
+    "collar": "stand",
+    "hem": "long-hero",
+    "closure": "concealed",
+    "material": "technical-woven",
+    "surface": "matte"
+  },
+  "continuous": {
+    "movement": 92,
+    "structure": 74,
+    "drama": 86,
+    "wearability": 68,
+    "ornament": 36
+  },
+  "vocabulary": {
+    "collar": ["stand", "soft-stand", "open"],
+    "hem": ["long-hero", "mid-hero", "cropped-editorial"],
+    "closure": ["concealed", "offset-concealed"],
+    "material": ["technical-woven", "vegan-suede-panel", "light-shell"],
+    "surface": ["matte", "matte-satin-contrast"]
+  },
+  "candidate_mutations": {
+    "wearable": {
+      "traitChanges": {
+        "hem": "mid-hero",
+        "material": "light-shell"
+      },
+      "continuousDeltas": {
+        "wearability": 16,
+        "drama": -10,
+        "structure": -4
+      }
+    },
+    "editorial": {
+      "traitChanges": {
+        "surface": "matte-satin-contrast"
+      },
+      "continuousDeltas": {
+        "drama": 9,
+        "ornament": 8
+      }
+    },
+    "technical": {
+      "traitChanges": {
+        "closure": "offset-concealed"
+      },
+      "continuousDeltas": {
+        "structure": 10,
+        "wearability": 5
+      }
+    }
+  }
+}
